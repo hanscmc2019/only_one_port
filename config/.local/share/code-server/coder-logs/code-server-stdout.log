@@ -1,0 +1,44 @@
+[2026-04-17T22:07:22.959Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-17T22:07:22.961Z] info  Using user-data-dir /config/data
+[2026-04-17T22:07:22.978Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-17T22:07:22.978Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-17T22:07:22.978Z] info    - Authentication is enabled
+[2026-04-17T22:07:22.978Z] info      - Using password from $PASSWORD
+[2026-04-17T22:07:22.979Z] info    - Not serving HTTPS
+[2026-04-17T22:07:22.979Z] info  Session server listening on /config/data/code-server-ipc.sock
+[17:07:57] 
+
+
+
+
+[reconnection-grace-time] No CLI argument provided, using default: 10800000ms (10800s)
+[17:07:57] Extension host agent started.
+[17:07:57] Started initializing default profile extensions in extensions installation folder. file:///config/extensions
+[17:07:57] Completed initializing default profile extensions in extensions installation folder. file:///config/extensions
+[2026-04-17T22:10:51.934Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-17T22:10:51.935Z] info  Using user-data-dir /config/data
+[2026-04-17T22:10:51.947Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-17T22:10:51.947Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-17T22:10:51.947Z] info    - Authentication is enabled
+[2026-04-17T22:10:51.947Z] info      - Using password from $PASSWORD
+[2026-04-17T22:10:51.947Z] info    - Not serving HTTPS
+[2026-04-17T22:10:51.947Z] info  Session server listening on /config/data/code-server-ipc.sock
+[17:10:55] 
+
+
+
+
+[reconnection-grace-time] No CLI argument provided, using default: 10800000ms (10800s)
+[17:10:55] Extension host agent started.
+[17:10:57] [172.20.0.1][24e59204][ManagementConnection] New connection established.
+[17:10:58] [172.20.0.1][01acb02f][ExtensionHostConnection] New connection established.
+[17:10:58] [172.20.0.1][01acb02f][ExtensionHostConnection] <681> Launched Extension Host Process.
+[17:10:59] [172.20.0.1][01acb02f][ExtensionHostConnection] <681> [reconnection-grace-time] Extension host: read VSCODE_RECONNECTION_GRACE_TIME=10800000ms (10800s)
+
+[17:12:59] [172.20.0.1][24e59204][ManagementConnection] The client has disconnected gracefully, so the connection will be disposed.
+[17:12:59] [172.20.0.1][01acb02f][ExtensionHostConnection] <681> Extension Host Process exited with code: 0, signal: null.
+[17:14:23] [172.20.0.1][d9f1d5bf][ManagementConnection] New connection established.
+[17:14:23] [172.20.0.1][136149f2][ExtensionHostConnection] New connection established.
+[17:14:23] [172.20.0.1][136149f2][ExtensionHostConnection] <1650> Launched Extension Host Process.
+[17:14:24] [172.20.0.1][136149f2][ExtensionHostConnection] <1650> [reconnection-grace-time] Extension host: read VSCODE_RECONNECTION_GRACE_TIME=10800000ms (10800s)
+

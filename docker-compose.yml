@@ -1,0 +1,93 @@
+version: "3.8"
+
+services:
+  # ──────────────────────────────────────────────
+  # NGINX - Servidor de archivos estáticos
+  # ──────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────
+  # POSTGRESQL - Base de datos
+  # ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ecommerce_user
+      POSTGRES_PASSWORD: ecommerce_pass
+      POSTGRES_DB: ecommerce_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────
+  # BACKEND - API Python (FastAPI)
+  # ──────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    environment:
+      DATABASE_URL: postgresql://ecommerce_user:ecommerce_pass@postgres:5432/ecommerce_db
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────
+  # CODE-SERVER - IDE web para todo el proyecto
+  # ──────────────────────────────────────────────
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: code-server
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Lima
+      - PASSWORD=winempresas
+      - SUDO_PASSWORD=Win123
+      - CS_BASE_PATH=/code
+    volumes:
+      - ./config:/config
+      - ./:/workspace
+    # Puerto solo accesible internamente (via Nginx en /code/)
+    ports:
+      - "8443:8443"
+    depends_on:
+      - nginx
+      - postgres
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+
+networks:
+  app-network:
+    driver: bridge
