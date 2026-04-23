@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>EShopper - Mantenimiento de Productos</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    
+    <!-- Favicon -->
+    <link href="img/favicon.ico" rel="icon">
+
+    <!-- Google Web Fonts -->
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet"> 
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Customized Bootstrap Stylesheet -->
+    <link href="css/style.css" rel="stylesheet">
+</head>
+
+<body>
+    <div id="topbar-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Page Header Start -->
+    <div class="container-fluid bg-secondary mb-5">
+        <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 150px">
+            <h1 class="font-weight-semi-bold text-uppercase mb-3">Mantenimiento de Productos</h1>
+        </div>
+    </div>
+    <!-- Page Header End -->
+
+    <!-- Main Container Start -->
+    <div class="container-fluid pt-2">
+        <div class="row px-xl-5">
+            
+            <!-- Columna Izquierda: Categorías -->
+            <div class="col-lg-3 col-md-12 mb-4">
+                <div class="border-bottom mb-4 pb-4">
+                    <h5 class="font-weight-semi-bold mb-4">1. Selecciona una Categoría</h5>
+                    <div class="list-group mb-3" id="category-list">
+                        <!-- Las categorías se cargarán aquí por JS -->
+                        <button type="button" class="list-group-item list-group-item-action text-center" disabled>
+                            Cargando...
+                        </button>
+                    </div>
+                    <!-- Formulario de Nueva Categoría -->
+                    <form id="add-category-form">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="new-category-name" placeholder="nombre nueva categoria" required>
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit" title="Agregar Categoría"><i class="fa fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Columna Central: Formulario de Producto -->
+            <div class="col-lg-4 col-md-12 mb-4">
+                <div class="bg-light p-4 mb-30 border">
+                    <h5 class="font-weight-semi-bold mb-4">2. Datos del Producto</h5>
+                    <form id="product-form">
+                        <input type="hidden" id="product-id">
+                        
+                        <div class="form-group">
+                            <label>Categoría Seleccionada</label>
+                            <input type="text" class="form-control" id="selected-category-name" readonly placeholder="Selecciona a la izquierda">
+                            <input type="hidden" id="selected-category-id" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Nombre del Producto *</label>
+                            <input type="text" class="form-control" id="product-name" required placeholder="Ej: Laptop Gaming">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Detalles</label>
+                            <textarea class="form-control" id="product-details" rows="4" placeholder="Especificaciones del producto..."></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Precio *</label>
+                            <input type="number" step="1" class="form-control" id="product-price" required placeholder="Ej: 1500">
+                        </div>
+
+                        <div class="form-group text-center">
+                            <label class="d-block text-left">Imagen del Producto</label>
+                            <input type="file" class="d-none" id="product-image" accept="image/*">
+                            <div id="image-preview-container" class="border rounded d-flex justify-content-center align-items-center mb-3" style="width: 150px; height: 150px; cursor: pointer; background-color: #f8f9fa; margin: 0 auto; overflow: hidden; position: relative; transition: all 0.3s ease;" onmouseover="this.style.borderColor='#D19C97'" onmouseout="this.style.borderColor='#dee2e6'">
+                                <i class="fa fa-plus fa-3x text-primary" id="image-placeholder-icon"></i>
+                                <img id="image-preview" src="" alt="Preview" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                            </div>
+                            <small class="text-muted">Haz clic en el cuadro para seleccionar una imagen</small>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button class="btn btn-primary py-2 px-4 w-100 mb-2" type="submit" id="btn-save">Guardar Producto</button>
+                            <button class="btn btn-outline-secondary py-2 px-4 w-100" type="button" id="btn-clear">Limpiar Formulario</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Lista de Productos -->
+            <div class="col-lg-5 col-md-12 mb-4">
+                <div class="bg-light p-4 border h-100">
+                    <h5 class="font-weight-semi-bold mb-4">3. Productos de la Categoría</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover text-center mb-0">
+                            <thead class="bg-secondary text-dark">
+                                <tr>
+                                    <th>Img</th>
+                                    <th>Nombre</th>
+                                    <th>Precio</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="product-list">
+                                <!-- Los productos se cargarán aquí -->
+                                <tr><td colspan="3">Selecciona una categoría primero</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <!-- Main Container End -->
+
+    <!-- Footer Start -->
+    <div class="container-fluid bg-secondary text-dark mt-5 pt-5">
+        <div class="row border-top border-light mx-xl-5 py-4">
+            <div class="col-md-6 px-xl-0">
+                <p class="mb-md-0 text-center text-md-left text-dark">
+                    &copy; <a class="text-dark font-weight-semi-bold" href="#">EShopper Admin</a>. All Rights Reserved.
+                </p>
+            </div>
+        </div>
+    </div>
+    <!-- Footer End -->
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Template Javascript -->
+    <script src="js/main.js"></script>
+
+    <!-- Script de Integración con el Backend (Django) -->
+    <script>
+        const API_URL = '/api';
+        let currentCategoryId = null;
+
+        // Al cargar la página
+        $(document).ready(function() {
+            // Lógica para previsualización de imagen
+            $('#image-preview-container').click(function() {
+                $('#product-image').click();
+            });
+
+            $('#product-image').change(function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#image-preview').attr('src', e.target.result).show();
+                        $('#image-placeholder-icon').hide();
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+
+            loadCategories();
+
+            // Evento submit del formulario
+            $('#product-form').on('submit', function(e) {
+                e.preventDefault();
+                saveProduct();
+            });
+
+            // Evento limpiar
+            $('#btn-clear').click(clearForm);
+
+            // Evento crear nueva categoría
+            $('#add-category-form').on('submit', function(e) {
+                e.preventDefault();
+                addCategory();
+            });
+        });
+
+        // 1. Cargar Categorías
+        function loadCategories() {
+            $.ajax({
+                url: `${API_URL}/categories/`,
+                method: 'GET',
+                success: function(categories) {
+                    const list = $('#category-list');
+                    list.empty();
+                    
+                    if(categories.length === 0) {
+                        list.append('<p class="text-muted p-3">No hay categorías. Crea una en la API primero.</p>');
+                        return;
+                    }
+
+                    categories.forEach((cat, index) => {
+                        const isSelected = index === 0; // Seleccionar la primera por defecto
+                        const activeClass = isSelected ? 'active text-white' : 'text-dark';
+                        
+                        const item = `
+                            <a href="#" class="list-group-item list-group-item-action ${activeClass} cat-item font-weight-bold" 
+                               data-id="${cat.id}" data-name="${cat.category_name}">
+                                <i class="fa fa-angle-right mr-2"></i>${cat.category_name}
+                            </a>
+                        `;
+                        list.append(item);
+
+                        // Si es la primera, cargamos sus productos
+                        if(isSelected) {
+                            selectCategory(cat.id, cat.category_name);
+                        }
+                    });
+
+                    // Evento de clic en categoría
+                    $('.cat-item').click(function(e) {
+                        e.preventDefault();
+                        $('.cat-item').removeClass('active text-white').addClass('text-dark');
+                        $(this).removeClass('text-dark').addClass('active text-white');
+                        
+                        const id = $(this).data('id');
+                        const name = $(this).data('name');
+                        selectCategory(id, name);
+                    });
+                },
+                error: function() {
+                    $('#category-list').html('<p class="text-danger p-3">Error conectando a la API</p>');
+                }
+            });
+        }
+
+        // 1.1 Agregar nueva categoría
+        function addCategory() {
+            const name = $('#new-category-name').val().trim();
+            if(!name) return;
+
+            $.ajax({
+                url: `${API_URL}/categories/`,
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ category_name: name }),
+                success: function() {
+                    $('#new-category-name').val('');
+                    loadCategories(); // recarga la lista para mostrar la nueva
+                },
+                error: function(err) {
+                    alert('Error al agregar la categoría');
+                    console.error(err);
+                }
+            });
+        }
+
+        // 2. Seleccionar Categoría y cargar sus productos
+        function selectCategory(id, name) {
+            currentCategoryId = id;
+            $('#selected-category-id').val(id);
+            $('#selected-category-name').val(name);
+            clearFormKeepCategory();
+            loadProducts(id);
+        }
+
+        // 3. Cargar Productos de una categoría
+        function loadProducts(categoryId) {
+            $('#product-list').html('<tr><td colspan="3"><i class="fa fa-spinner fa-spin"></i> Cargando...</td></tr>');
+            
+            $.ajax({
+                url: `${API_URL}/products/`,
+                method: 'GET',
+                success: function(allProducts) {
+                    // Como el backend retorna todos, filtramos por frontend para este ejemplo.
+                    // (Lo ideal sería que el backend acepte query params como ?id_category=categoryId)
+                    const products = allProducts.filter(p => p.id_category === categoryId);
+                    
+                    const list = $('#product-list');
+                    list.empty();
+
+                    if(products.length === 0) {
+                        list.append('<tr><td colspan="3" class="text-muted">No hay productos en esta categoría</td></tr>');
+                        return;
+                    }
+
+                    products.forEach(p => {
+                        const price = p.price != null ? `S/ ${p.price}` : 'N/A';
+                        const imgPath = p.image ? (p.image.includes('http') ? new URL(p.image).pathname : p.image) : '';
+                        const imgHtml = p.image ? `<img src="${imgPath}" alt="img" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">` : `<span class="text-muted"><i class="fa fa-image"></i></span>`;
+                        const row = `
+                            <tr>
+                                <td class="align-middle">${imgHtml}</td>
+                                <td class="align-middle">${p.product_name}</td>
+                                <td class="align-middle">${price}</td>
+                                <td class="align-middle">
+                                    <button class="btn btn-sm btn-info" onclick="editProduct(${p.id})"><i class="fa fa-pen"></i></button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteProduct(${p.id})"><i class="fa fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                        list.append(row);
+                    });
+                }
+            });
+        }
+
+        // 4. Guardar Producto (POST o PUT)
+        function saveProduct() {
+            const id = $('#product-id').val();
+            let formData = new FormData();
+            formData.append('product_name', $('#product-name').val());
+            formData.append('details', $('#product-details').val());
+            if ($('#product-price').val()) {
+                formData.append('price', $('#product-price').val());
+            }
+            formData.append('id_category', currentCategoryId);
+            
+            const fileInput = document.getElementById('product-image');
+            if (fileInput.files.length > 0) {
+                formData.append('image', fileInput.files[0]);
+            }
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/products/${id}/` : `${API_URL}/products/`;
+
+            const token = localStorage.getItem('access_token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+            $.ajax({
+                url: url,
+                method: method,
+                headers: headers,
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function() {
+                    alert('Producto guardado exitosamente');
+                    loadProducts(currentCategoryId);
+                    clearFormKeepCategory();
+                },
+                error: function(err) {
+                    if(err.status === 401) {
+                        alert('Tu sesión ha expirado o es inválida. Por favor, cierra sesión y vuelve a ingresar.');
+                    } else {
+                        alert('Error al guardar el producto');
+                    }
+                    console.error(err);
+                }
+            });
+        }
+
+        // 5. Cargar datos en el formulario para editar
+        function editProduct(id) {
+            $.ajax({
+                url: `${API_URL}/products/${id}/`,
+                method: 'GET',
+                success: function(p) {
+                    $('#product-id').val(p.id);
+                    $('#product-name').val(p.product_name);
+                    $('#product-details').val(p.details);
+                    $('#product-price').val(p.price);
+                    
+                    $('#product-image').val('');
+                    if (p.image) {
+                        const imgPath = p.image.includes('http') ? new URL(p.image).pathname : p.image;
+                        $('#image-preview').attr('src', imgPath).show();
+                        $('#image-placeholder-icon').hide();
+                    } else {
+                        $('#image-preview').hide().attr('src', '');
+                        $('#image-placeholder-icon').show();
+                    }
+
+                    // Cambiar el botón para indicar edición
+                    $('#btn-save').text('Actualizar Producto').removeClass('btn-primary').addClass('btn-success');
+                }
+            });
+        }
+
+        // 6. Eliminar producto
+        function deleteProduct(id) {
+            if(!confirm('¿Estás seguro de eliminar este producto?')) return;
+
+            const token = localStorage.getItem('access_token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+            $.ajax({
+                url: `${API_URL}/products/${id}/`,
+                method: 'DELETE',
+                headers: headers,
+                success: function() {
+                    loadProducts(currentCategoryId);
+                },
+                error: function(err) {
+                    if(err.status === 401) {
+                        alert('Tu sesión ha expirado o es inválida. Por favor, cierra sesión y vuelve a ingresar.');
+                    } else {
+                        alert('Error al eliminar');
+                    }
+                }
+            });
+        }
+
+        // Utilidades para limpiar el formulario
+        function clearFormKeepCategory() {
+            $('#product-id').val('');
+            $('#product-name').val('');
+            $('#product-details').val('');
+            $('#product-price').val('');
+            $('#product-image').val('');
+            $('#image-preview').hide().attr('src', '');
+            $('#image-placeholder-icon').show();
+            $('#btn-save').text('Guardar Producto').removeClass('btn-success').addClass('btn-primary');
+        }
+
+        function clearForm() {
+            clearFormKeepCategory();
+        }
+
+        // 7. Crear nueva categoría
+        function addCategory() {
+            const catName = $('#new-category-name').val();
+            if (!catName) return;
+
+            const token = localStorage.getItem('access_token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+
+            $.ajax({
+                url: `${API_URL}/categories/`,
+                method: 'POST',
+                headers: headers,
+                contentType: 'application/json',
+                data: JSON.stringify({ category_name: catName }),
+                success: function() {
+                    $('#new-category-name').val('');
+                    loadCategories();
+                },
+                error: function(err) {
+                    if(err.status === 401) {
+                        alert('Tu sesión ha expirado o es inválida. Por favor, cierra sesión y vuelve a ingresar.');
+                    } else {
+                        alert('Error al crear categoría');
+                    }
+                    console.error(err);
+                }
+            });
+        }
+    </script>
+    <script src="js/load_components.js"></script>
+</body>
+</html>

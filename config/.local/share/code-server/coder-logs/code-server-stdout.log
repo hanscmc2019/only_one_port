@@ -42,3 +42,251 @@
 [17:14:23] [172.20.0.1][136149f2][ExtensionHostConnection] <1650> Launched Extension Host Process.
 [17:14:24] [172.20.0.1][136149f2][ExtensionHostConnection] <1650> [reconnection-grace-time] Extension host: read VSCODE_RECONNECTION_GRACE_TIME=10800000ms (10800s)
 
+[2026-04-18T01:02:48.899Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T01:02:48.900Z] info  Using user-data-dir /config/data
+[2026-04-18T01:02:48.911Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T01:02:48.911Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T01:02:48.911Z] info    - Authentication is enabled
+[2026-04-18T01:02:48.911Z] info      - Using password from $PASSWORD
+[2026-04-18T01:02:48.911Z] info    - Not serving HTTPS
+[2026-04-18T01:02:48.911Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T01:40:36.142Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T01:40:36.150Z] info  Using user-data-dir /config/data
+[2026-04-18T01:40:36.162Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T01:40:36.162Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T01:40:36.162Z] info    - Authentication is enabled
+[2026-04-18T01:40:36.163Z] info      - Using password from $PASSWORD
+[2026-04-18T01:40:36.163Z] info    - Not serving HTTPS
+[2026-04-18T01:40:36.163Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T01:41:25.820Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T01:41:25.828Z] info  Using user-data-dir /config/data
+[2026-04-18T01:41:25.840Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T01:41:25.841Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T01:41:25.841Z] info    - Authentication is enabled
+[2026-04-18T01:41:25.841Z] info      - Using password from $PASSWORD
+[2026-04-18T01:41:25.841Z] info    - Not serving HTTPS
+[2026-04-18T01:41:25.841Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T01:53:46.641Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T01:53:46.645Z] info  Using user-data-dir /config/data
+[2026-04-18T01:53:46.656Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T01:53:46.656Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T01:53:46.656Z] info    - Authentication is enabled
+[2026-04-18T01:53:46.656Z] info      - Using password from $PASSWORD
+[2026-04-18T01:53:46.656Z] info    - Not serving HTTPS
+[2026-04-18T01:53:46.656Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T01:55:17.688Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T01:55:17.688Z] info  Using user-data-dir /config/data
+[2026-04-18T01:55:17.700Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T01:55:17.700Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T01:55:17.700Z] info    - Authentication is enabled
+[2026-04-18T01:55:17.700Z] info      - Using password from $PASSWORD
+[2026-04-18T01:55:17.700Z] info    - Not serving HTTPS
+[2026-04-18T01:55:17.700Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T01:56:20.267Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T01:56:20.268Z] info  Using user-data-dir /config/data
+[2026-04-18T01:56:20.278Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T01:56:20.278Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T01:56:20.279Z] info    - Authentication is enabled
+[2026-04-18T01:56:20.279Z] info      - Using password from $PASSWORD
+[2026-04-18T01:56:20.279Z] info    - Not serving HTTPS
+[2026-04-18T01:56:20.279Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T02:24:01.179Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T02:24:01.187Z] info  Using user-data-dir /config/data
+[2026-04-18T02:24:01.199Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T02:24:01.199Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T02:24:01.199Z] info    - Authentication is enabled
+[2026-04-18T02:24:01.199Z] info      - Using password from $PASSWORD
+[2026-04-18T02:24:01.199Z] info    - Not serving HTTPS
+[2026-04-18T02:24:01.199Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T02:24:21.059Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T02:24:21.060Z] info  Using user-data-dir /config/data
+[2026-04-18T02:24:21.070Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T02:24:21.071Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T02:24:21.071Z] info    - Authentication is enabled
+[2026-04-18T02:24:21.071Z] info      - Using password from $PASSWORD
+[2026-04-18T02:24:21.071Z] info    - Not serving HTTPS
+[2026-04-18T02:24:21.071Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T02:26:30.507Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T02:26:30.508Z] info  Using user-data-dir /config/data
+[2026-04-18T02:26:30.520Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T02:26:30.520Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T02:26:30.520Z] info    - Authentication is enabled
+[2026-04-18T02:26:30.520Z] info      - Using password from $PASSWORD
+[2026-04-18T02:26:30.520Z] info    - Not serving HTTPS
+[2026-04-18T02:26:30.520Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T02:26:52.751Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T02:26:52.752Z] info  Using user-data-dir /config/data
+[2026-04-18T02:26:52.761Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T02:26:52.761Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T02:26:52.762Z] info    - Authentication is enabled
+[2026-04-18T02:26:52.762Z] info      - Using password from $PASSWORD
+[2026-04-18T02:26:52.762Z] info    - Not serving HTTPS
+[2026-04-18T02:26:52.762Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T02:52:22.533Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T02:52:22.540Z] info  Using user-data-dir /config/data
+[2026-04-18T02:52:22.553Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T02:52:22.553Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T02:52:22.553Z] info    - Authentication is enabled
+[2026-04-18T02:52:22.553Z] info      - Using password from $PASSWORD
+[2026-04-18T02:52:22.553Z] info    - Not serving HTTPS
+[2026-04-18T02:52:22.553Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T02:52:41.333Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T02:52:41.333Z] info  Using user-data-dir /config/data
+[2026-04-18T02:52:41.345Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T02:52:41.345Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T02:52:41.345Z] info    - Authentication is enabled
+[2026-04-18T02:52:41.345Z] info      - Using password from $PASSWORD
+[2026-04-18T02:52:41.345Z] info    - Not serving HTTPS
+[2026-04-18T02:52:41.345Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T14:22:43.460Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T14:22:43.465Z] info  Using user-data-dir /config/data
+[2026-04-18T14:22:43.477Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T14:22:43.477Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T14:22:43.477Z] info    - Authentication is enabled
+[2026-04-18T14:22:43.477Z] info      - Using password from $PASSWORD
+[2026-04-18T14:22:43.477Z] info    - Not serving HTTPS
+[2026-04-18T14:22:43.477Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T19:42:30.615Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T19:42:30.619Z] info  Using user-data-dir /config/data
+[2026-04-18T19:42:30.634Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T19:42:30.634Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T19:42:30.634Z] info    - Authentication is enabled
+[2026-04-18T19:42:30.634Z] info      - Using password from $PASSWORD
+[2026-04-18T19:42:30.634Z] info    - Not serving HTTPS
+[2026-04-18T19:42:30.634Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T19:44:06.019Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T19:44:06.020Z] info  Using user-data-dir /config/data
+[2026-04-18T19:44:06.031Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T19:44:06.031Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T19:44:06.031Z] info    - Authentication is enabled
+[2026-04-18T19:44:06.032Z] info      - Using password from $PASSWORD
+[2026-04-18T19:44:06.032Z] info    - Not serving HTTPS
+[2026-04-18T19:44:06.032Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-18T19:45:19.009Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-18T19:45:19.010Z] info  Using user-data-dir /config/data
+[2026-04-18T19:45:19.021Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-18T19:45:19.021Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-18T19:45:19.021Z] info    - Authentication is enabled
+[2026-04-18T19:45:19.021Z] info      - Using password from $PASSWORD
+[2026-04-18T19:45:19.021Z] info    - Not serving HTTPS
+[2026-04-18T19:45:19.021Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-19T01:21:54.726Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-19T01:21:54.730Z] info  Using user-data-dir /config/data
+[2026-04-19T01:21:54.741Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-19T01:21:54.741Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-19T01:21:54.742Z] info    - Authentication is enabled
+[2026-04-19T01:21:54.742Z] info      - Using password from $PASSWORD
+[2026-04-19T01:21:54.742Z] info    - Not serving HTTPS
+[2026-04-19T01:21:54.742Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-19T03:22:47.992Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-19T03:22:47.996Z] info  Using user-data-dir /config/data
+[2026-04-19T03:22:48.008Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-19T03:22:48.008Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-19T03:22:48.008Z] info    - Authentication is enabled
+[2026-04-19T03:22:48.008Z] info      - Using password from $PASSWORD
+[2026-04-19T03:22:48.008Z] info    - Not serving HTTPS
+[2026-04-19T03:22:48.008Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-19T14:20:49.533Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-19T14:20:49.539Z] info  Using user-data-dir /config/data
+[2026-04-19T14:20:49.551Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-19T14:20:49.551Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-19T14:20:49.551Z] info    - Authentication is enabled
+[2026-04-19T14:20:49.551Z] info      - Using password from $PASSWORD
+[2026-04-19T14:20:49.552Z] info    - Not serving HTTPS
+[2026-04-19T14:20:49.552Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-19T18:48:06.308Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-19T18:48:06.312Z] info  Using user-data-dir /config/data
+[2026-04-19T18:48:06.324Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-19T18:48:06.324Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-19T18:48:06.324Z] info    - Authentication is enabled
+[2026-04-19T18:48:06.324Z] info      - Using password from $PASSWORD
+[2026-04-19T18:48:06.324Z] info    - Not serving HTTPS
+[2026-04-19T18:48:06.324Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-19T20:55:40.454Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-19T20:55:40.461Z] info  Using user-data-dir /config/data
+[2026-04-19T20:55:40.474Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-19T20:55:40.474Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-19T20:55:40.474Z] info    - Authentication is enabled
+[2026-04-19T20:55:40.474Z] info      - Using password from $PASSWORD
+[2026-04-19T20:55:40.474Z] info    - Not serving HTTPS
+[2026-04-19T20:55:40.474Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-19T22:39:43.807Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-19T22:39:43.824Z] info  Using user-data-dir /config/data
+[2026-04-19T22:39:43.839Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-19T22:39:43.839Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-19T22:39:43.839Z] info    - Authentication is enabled
+[2026-04-19T22:39:43.839Z] info      - Using password from $PASSWORD
+[2026-04-19T22:39:43.839Z] info    - Not serving HTTPS
+[2026-04-19T22:39:43.839Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-19T22:59:00.144Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-19T22:59:00.162Z] info  Using user-data-dir /config/data
+[2026-04-19T22:59:00.174Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-19T22:59:00.174Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-19T22:59:00.174Z] info    - Authentication is enabled
+[2026-04-19T22:59:00.175Z] info      - Using password from $PASSWORD
+[2026-04-19T22:59:00.175Z] info    - Not serving HTTPS
+[2026-04-19T22:59:00.175Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-19T23:41:32.255Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-19T23:41:32.259Z] info  Using user-data-dir /config/data
+[2026-04-19T23:41:32.270Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-19T23:41:32.270Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-19T23:41:32.270Z] info    - Authentication is enabled
+[2026-04-19T23:41:32.270Z] info      - Using password from $PASSWORD
+[2026-04-19T23:41:32.270Z] info    - Not serving HTTPS
+[2026-04-19T23:41:32.270Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-20T00:48:24.354Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-20T00:48:24.359Z] info  Using user-data-dir /config/data
+[2026-04-20T00:48:24.373Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-20T00:48:24.373Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-20T00:48:24.373Z] info    - Authentication is enabled
+[2026-04-20T00:48:24.373Z] info      - Using password from $PASSWORD
+[2026-04-20T00:48:24.373Z] info    - Not serving HTTPS
+[2026-04-20T00:48:24.373Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-20T00:52:04.279Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-20T00:52:04.301Z] info  Using user-data-dir /config/data
+[2026-04-20T00:52:04.317Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-20T00:52:04.317Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-20T00:52:04.317Z] info    - Authentication is enabled
+[2026-04-20T00:52:04.317Z] info      - Using password from $PASSWORD
+[2026-04-20T00:52:04.317Z] info    - Not serving HTTPS
+[2026-04-20T00:52:04.317Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-20T00:54:09.120Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-20T00:54:09.121Z] info  Using user-data-dir /config/data
+[2026-04-20T00:54:09.130Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-20T00:54:09.131Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-20T00:54:09.131Z] info    - Authentication is enabled
+[2026-04-20T00:54:09.131Z] info      - Using password from $PASSWORD
+[2026-04-20T00:54:09.131Z] info    - Not serving HTTPS
+[2026-04-20T00:54:09.131Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-20T00:57:27.926Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-20T00:57:27.927Z] info  Using user-data-dir /config/data
+[2026-04-20T00:57:27.938Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-20T00:57:27.938Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-20T00:57:27.938Z] info    - Authentication is enabled
+[2026-04-20T00:57:27.938Z] info      - Using password from $PASSWORD
+[2026-04-20T00:57:27.938Z] info    - Not serving HTTPS
+[2026-04-20T00:57:27.938Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-20T01:49:47.840Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-20T01:49:47.844Z] info  Using user-data-dir /config/data
+[2026-04-20T01:49:47.854Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-20T01:49:47.855Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-20T01:49:47.855Z] info    - Authentication is enabled
+[2026-04-20T01:49:47.855Z] info      - Using password from $PASSWORD
+[2026-04-20T01:49:47.855Z] info    - Not serving HTTPS
+[2026-04-20T01:49:47.855Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-20T04:25:24.047Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-20T04:25:24.054Z] info  Using user-data-dir /config/data
+[2026-04-20T04:25:24.066Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-20T04:25:24.066Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-20T04:25:24.067Z] info    - Authentication is enabled
+[2026-04-20T04:25:24.067Z] info      - Using password from $PASSWORD
+[2026-04-20T04:25:24.067Z] info    - Not serving HTTPS
+[2026-04-20T04:25:24.067Z] info  Session server listening on /config/data/code-server-ipc.sock
+[2026-04-20T04:28:31.859Z] info  code-server 4.116.0 be537ce77a2d84428ad834890d2f6f1e413366ad
+[2026-04-20T04:28:31.860Z] info  Using user-data-dir /config/data
+[2026-04-20T04:28:31.879Z] info  Using config file /config/.config/code-server/config.yaml
+[2026-04-20T04:28:31.879Z] info  HTTP server listening on http://0.0.0.0:8443/
+[2026-04-20T04:28:31.879Z] info    - Authentication is enabled
+[2026-04-20T04:28:31.880Z] info      - Using password from $PASSWORD
+[2026-04-20T04:28:31.880Z] info    - Not serving HTTPS
+[2026-04-20T04:28:31.880Z] info  Session server listening on /config/data/code-server-ipc.sock

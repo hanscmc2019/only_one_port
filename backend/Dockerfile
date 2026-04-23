@@ -17,5 +17,10 @@ COPY . .
 # Exponer puerto
 EXPOSE 8000
 
-# Comando de inicio (modo desarrollo con recarga automática)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Script de entrada para migraciones automáticas
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Comando de inicio
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
