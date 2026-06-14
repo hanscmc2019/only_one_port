@@ -7,7 +7,7 @@ $(document).ready(function() {
     // 2. Cargar Navbar y Aplicar Lógica
     if ($('#navbar-placeholder').length) {
         let currentPath = window.location.pathname.split('/').pop() || 'index.html';
-        
+
         $('#navbar-placeholder').load('components/navbar.html', function() {
             // Marcar enlace activo
             $('.navbar-nav a').removeClass('active');
@@ -18,6 +18,11 @@ $(document).ready(function() {
         });
     } else {
         applyAuthLogic();
+    }
+
+    // 3. Cargar Footer
+    if ($('#footer-placeholder').length) {
+        $('#footer-placeholder').load('components/footer.html');
     }
 });
 
@@ -54,10 +59,14 @@ function applyAuthLogic() {
             `);
             $('#logout-btn').click(function(e) {
                 e.preventDefault();
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
-                localStorage.removeItem('user_roles');
-                localStorage.removeItem('username');
+                if (typeof clearSession === 'function') {
+                    clearSession();
+                } else {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    localStorage.removeItem('user_roles');
+                    localStorage.removeItem('username');
+                }
                 window.location.href = 'index.html';
             });
         }

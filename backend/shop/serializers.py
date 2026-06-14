@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Product, Cart, CartItem
+from .models import Category, Product, Cart, CartItem, Sale, Inventory
 
 class CartItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='product.product_name')
@@ -40,6 +40,21 @@ class CategorySerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
+        fields = '__all__'
+
+    def validate_price(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError('El precio no puede ser negativo.')
+        return value
+
+class InventorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Inventory
+        fields = '__all__'
+
+class SaleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sale
         fields = '__all__'
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer

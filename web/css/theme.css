@@ -1,0 +1,69 @@
+/* ============================================================
+   theme.css — CONFIGURACIÓN GLOBAL DEL TEMA (EShopper)
+   ------------------------------------------------------------
+   Este es el ÚNICO archivo que el programador debe editar para
+   re-skinnear la web. Cambiá los valores de :root y todo el sitio
+   se actualiza (colores, tamaños de letra y detalles principales).
+
+   Debe cargarse DESPUÉS de style.css en cada página:
+       <link href="css/style.css" rel="stylesheet">
+       <link href="css/theme.css" rel="stylesheet">
+   ============================================================ */
+
+:root {
+    /* ---- Colores principales ---- */
+    --brand-primary:   #D19C97;   /* color de acento (botones, links, iconos) */
+    --brand-secondary: #EDF1FF;   /* fondos suaves (cabeceras, footer, badges) */
+    --brand-dark:      #1C1C1C;   /* textos y títulos oscuros */
+    --brand-text:      #6F6F6F;   /* texto de párrafo / cuerpo */
+
+    /* ---- Tipografía ---- */
+    --brand-font:          "Poppins", sans-serif;  /* familia tipográfica */
+    --brand-root-size:     16px;   /* tamaño base global: escala TODO el texto (rem) */
+    --brand-line-height:   1.5;
+    --brand-heading-weight: 600;   /* peso de los títulos h1-h6 */
+
+    /* ---- Detalles principales ---- */
+    --brand-radius:        4px;    /* radio de bordes en botones, inputs, tarjetas */
+    --brand-btn-padding-y: 0.375rem;
+    --brand-btn-padding-x: 0.75rem;
+}
+
+/* ---- Aplicación de la tipografía global ---- */
+html {
+    font-size: var(--brand-root-size);   /* escala global del texto (afecta a todos los rem) */
+}
+
+body {
+    font-family: var(--brand-font);
+    line-height: var(--brand-line-height);
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: var(--brand-font);
+    font-weight: var(--brand-heading-weight);
+}
+
+/* ---- Detalles principales: radios ---- */
+.btn,
+.form-control,
+.custom-select {
+    border-radius: var(--brand-radius);
+}
+
+/* Botón primario respeta el padding configurable */
+.btn-primary {
+    padding-top: var(--brand-btn-padding-y);
+    padding-bottom: var(--brand-btn-padding-y);
+    padding-left: var(--brand-btn-padding-x);
+    padding-right: var(--brand-btn-padding-x);
+}
+
+/* Cuadro de subida de imagen (mantenimiento): borde de acento al pasar el mouse */
+#image-preview-container {
+    transition: border-color 0.3s ease;
+}
+#image-preview-container:hover {
+    border-color: var(--brand-primary) !important;
+}

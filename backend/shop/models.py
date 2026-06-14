@@ -49,3 +49,26 @@ class CartItem(models.Model):
         managed = True
         db_table = 'cart_item'
         unique_together = ('cart', 'product')
+
+class Inventory(models.Model):
+    # Movimiento de inventario. type: convención del negocio (p.ej. 1=entrada, 2=salida).
+    id_product = models.ForeignKey(Product, models.DO_NOTHING, db_column='id_product', blank=True, null=True)
+    type = models.SmallIntegerField()
+    amount = models.BigIntegerField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = 'Inventory'
+
+class Sale(models.Model):
+    id_product = models.ForeignKey(Product, models.DO_NOTHING, db_column='id_product', blank=True, null=True)
+    product_name = models.CharField(max_length=255, blank=True, null=True)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    total_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = 'sale'

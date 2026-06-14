@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="utf-8">
@@ -18,6 +18,7 @@
 
     <!-- Customized Bootstrap Stylesheet -->
     <link href="css/style.css" rel="stylesheet">
+    <link href="css/theme.css" rel="stylesheet">
 </head>
 
 <body>
@@ -89,7 +90,7 @@
                         <div class="form-group text-center">
                             <label class="d-block text-left">Imagen del Producto</label>
                             <input type="file" class="d-none" id="product-image" accept="image/*">
-                            <div id="image-preview-container" class="border rounded d-flex justify-content-center align-items-center mb-3" style="width: 150px; height: 150px; cursor: pointer; background-color: #f8f9fa; margin: 0 auto; overflow: hidden; position: relative; transition: all 0.3s ease;" onmouseover="this.style.borderColor='#D19C97'" onmouseout="this.style.borderColor='#dee2e6'">
+                            <div id="image-preview-container" class="border rounded d-flex justify-content-center align-items-center mb-3" style="width: 150px; height: 150px; cursor: pointer; background-color: #f8f9fa; margin: 0 auto; overflow: hidden; position: relative; transition: all 0.3s ease;">
                                 <i class="fa fa-plus fa-3x text-primary" id="image-placeholder-icon"></i>
                                 <img id="image-preview" src="" alt="Preview" style="width: 100%; height: 100%; object-fit: cover; display: none;">
                             </div>
@@ -131,17 +132,7 @@
     </div>
     <!-- Main Container End -->
 
-    <!-- Footer Start -->
-    <div class="container-fluid bg-secondary text-dark mt-5 pt-5">
-        <div class="row border-top border-light mx-xl-5 py-4">
-            <div class="col-md-6 px-xl-0">
-                <p class="mb-md-0 text-center text-md-left text-dark">
-                    &copy; <a class="text-dark font-weight-semi-bold" href="#">EShopper Admin</a>. All Rights Reserved.
-                </p>
-            </div>
-        </div>
-    </div>
-    <!-- Footer End -->
+    <div id="footer-placeholder"></div>
 
     <!-- JavaScript Libraries -->
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
@@ -240,26 +231,7 @@
             });
         }
 
-        // 1.1 Agregar nueva categoría
-        function addCategory() {
-            const name = $('#new-category-name').val().trim();
-            if(!name) return;
-
-            $.ajax({
-                url: `${API_URL}/categories/`,
-                method: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ category_name: name }),
-                success: function() {
-                    $('#new-category-name').val('');
-                    loadCategories(); // recarga la lista para mostrar la nueva
-                },
-                error: function(err) {
-                    alert('Error al agregar la categoría');
-                    console.error(err);
-                }
-            });
-        }
+        // Nota: addCategory() se define más abajo (versión con token y manejo de 401).
 
         // 2. Seleccionar Categoría y cargar sus productos
         function selectCategory(id, name) {
@@ -275,13 +247,10 @@
             $('#product-list').html('<tr><td colspan="3"><i class="fa fa-spinner fa-spin"></i> Cargando...</td></tr>');
             
             $.ajax({
-                url: `${API_URL}/products/`,
+                url: `${API_URL}/products/?id_category=${categoryId}`,
                 method: 'GET',
-                success: function(allProducts) {
-                    // Como el backend retorna todos, filtramos por frontend para este ejemplo.
-                    // (Lo ideal sería que el backend acepte query params como ?id_category=categoryId)
-                    const products = allProducts.filter(p => p.id_category === categoryId);
-                    
+                success: function(products) {
+                    // El backend ya filtra por ?id_category=
                     const list = $('#product-list');
                     list.empty();
 
@@ -292,7 +261,7 @@
 
                     products.forEach(p => {
                         const price = p.price != null ? `S/ ${p.price}` : 'N/A';
-                        const imgPath = p.image ? (p.image.includes('http') ? new URL(p.image).pathname : p.image) : '';
+                        const imgPath = imageUrl(p.image, '');
                         const imgHtml = p.image ? `<img src="${imgPath}" alt="img" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">` : `<span class="text-muted"><i class="fa fa-image"></i></span>`;
                         const row = `
                             <tr>
@@ -369,7 +338,7 @@
                     
                     $('#product-image').val('');
                     if (p.image) {
-                        const imgPath = p.image.includes('http') ? new URL(p.image).pathname : p.image;
+                        const imgPath = imageUrl(p.image, '');
                         $('#image-preview').attr('src', imgPath).show();
                         $('#image-placeholder-icon').hide();
                     } else {

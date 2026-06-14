@@ -4,6 +4,9 @@ set -e
 echo "=== Aplicando migraciones de base de datos ==="
 python manage.py migrate --noinput
 
+echo "=== Recolectando archivos estáticos (admin/DRF) ==="
+python manage.py collectstatic --noinput
+
 echo "=== Ejecutando script de Seed (Roles y Usuarios por defecto) ==="
 cat << 'EOF' > seed.py
 import os

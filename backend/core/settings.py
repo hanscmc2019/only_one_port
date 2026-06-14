@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,18 +21,29 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-j0^=%g8(^3zui4$d9u4eal58#t9f=*d7_bc$^c03yo4!i&k(ol'
+# Se lee de la variable de entorno SECRET_KEY (ver .env). El default solo es
+# un fallback de desarrollo.
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-j0^=%g8(^3zui4$d9u4eal58#t9f=*d7_bc$^c03yo4!i&k(ol'
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG es False salvo que la env DEBUG sea "true"/"1"/"yes".
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('1', 'true', 'yes', 'on')
 
-ALLOWED_HOSTS = ['*']
+# Helper: convierte "a,b,c" (env) en lista, ignorando vacíos.
+def _env_list(name, default):
+    return [x.strip() for x in os.environ.get(name, default).split(',') if x.strip()]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost',
-    'http://localhost:8080',
-    'http://127.0.0.1:8080',
-]
+# Hosts permitidos (separados por coma en la env ALLOWED_HOSTS).
+ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+
+# Orígenes confiables para CSRF (admin de Django). Deben incluir esquema y puerto.
+CSRF_TRUSTED_ORIGINS = _env_list(
+    'CSRF_TRUSTED_ORIGINS',
+    'http://localhost:8090,http://127.0.0.1:8090'
+)
 
 # Application definition
 
@@ -51,6 +63,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise sirve los estáticos (admin/DRF) con DEBUG=False, justo tras SecurityMiddleware.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -85,15 +99,21 @@ WSGI_APPLICATION = 'core.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ecommerce_db',
-        'USER': 'ecommerce_user',
-        'PASSWORD': 'ecommerce_pass',
-        'HOST': 'postgres',
-        'PORT': '5432',
+        'NAME': os.environ.get('POSTGRES_DB', 'ecommerce_db'),
+        'USER': os.environ.get('POSTGRES_USER', 'ecommerce_user'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'ecommerce_pass'),
+        'HOST': os.environ.get('POSTGRES_HOST', 'postgres'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
 
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS: orígenes permitidos (separados por coma en la env CORS_ALLOWED_ORIGINS).
+# El frontend propio usa mismo-origen (nginx), así que esto solo aplica a
+# clientes externos autorizados.
+CORS_ALLOWED_ORIGINS = _env_list(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:8090,http://127.0.0.1:8090'
+)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -101,8 +121,25 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
-    )
+    ),
+    # Límite de peticiones por IP (anónimos) y por usuario. El scope 'login'
+    # se aplica explícitamente en la vista de login (anti fuerza bruta).
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '200/min',
+        'user': '400/min',
+        'login': '5/min',
+    },
+    # Paginación opcional: sin ?limit= devuelve la lista completa (no rompe el
+    # front actual); los clientes pueden pedir ?limit=&offset= cuando quieran.
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
 }
+
+# Número de WhatsApp para el checkout (configurable por env).
+WHATSAPP_PHONE = os.environ.get('WHATSAPP_PHONE', '51923949691')
 
 from datetime import timedelta
 SIMPLE_JWT = {
@@ -144,7 +181,18 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = '/app/staticfiles'
+
+# WhiteNoise: almacenamiento comprimido para estáticos (sirve con DEBUG=False).
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/app/media'

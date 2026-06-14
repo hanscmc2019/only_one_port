@@ -8,7 +8,7 @@ services:
     image: nginx:alpine
     container_name: nginx
     ports:
-      - "8080:80"
+      - "8090:80"
     volumes:
       - ./web:/usr/share/nginx/html:ro
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -30,7 +30,7 @@ services:
       POSTGRES_PASSWORD: ecommerce_pass
       POSTGRES_DB: ecommerce_db
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     # ports:
     #   - "5432:5432"
@@ -51,8 +51,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: backend
-    environment:
-      DATABASE_URL: postgresql://ecommerce_user:ecommerce_pass@postgres:5432/ecommerce_db
+    env_file:
+      - .env
     volumes:
       - ./backend:/app
       - ./media:/app/media
@@ -102,9 +102,6 @@ services:
   #   restart: unless-stopped
   #   networks:
   #     - app-network
-
-volumes:
-  postgres_data:
 
 
 networks:

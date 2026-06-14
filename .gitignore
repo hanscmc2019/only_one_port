@@ -1,0 +1,18 @@
+# Entorno
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Datos de PostgreSQL (volumen local)
+postgres_data/
+
+# Media subida por usuarios
+media/
+
+# Estáticos recolectados (collectstatic)
+backend/staticfiles/
+
+_integracion/

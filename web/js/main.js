@@ -28,60 +28,65 @@
         }
     });
     $('.back-to-top').click(function () {
-        $('html, body').animate({scrollTop: 0}, 1500, 'easeInOutExpo');
+        // Usa el easing personalizado si está cargado; si no, el de jQuery por defecto
+        var easing = ($.easing && $.easing.easeInOutExpo) ? 'easeInOutExpo' : 'swing';
+        $('html, body').animate({scrollTop: 0}, 1500, easing);
         return false;
     });
 
 
-    // Vendor carousel
-    $('.vendor-carousel').owlCarousel({
-        loop: true,
-        margin: 29,
-        nav: false,
-        autoplay: true,
-        smartSpeed: 1000,
-        responsive: {
-            0:{
-                items:2
-            },
-            576:{
-                items:3
-            },
-            768:{
-                items:4
-            },
-            992:{
-                items:5
-            },
-            1200:{
-                items:6
+    // Carousels (solo si la librería owlCarousel está cargada en la página)
+    if ($.fn.owlCarousel) {
+        // Vendor carousel
+        $('.vendor-carousel').owlCarousel({
+            loop: true,
+            margin: 29,
+            nav: false,
+            autoplay: true,
+            smartSpeed: 1000,
+            responsive: {
+                0:{
+                    items:2
+                },
+                576:{
+                    items:3
+                },
+                768:{
+                    items:4
+                },
+                992:{
+                    items:5
+                },
+                1200:{
+                    items:6
+                }
             }
-        }
-    });
+        });
 
 
-    // Related carousel
-    $('.related-carousel').owlCarousel({
-        loop: true,
-        margin: 29,
-        nav: false,
-        autoplay: true,
-        smartSpeed: 1000,
-        responsive: {
-            0:{
-                items:1
-            },
-            576:{
-                items:2
-            },
-            768:{
-                items:3
-            },
-            992:{
-                items:4
+        // Related carousel
+        $('.related-carousel').owlCarousel({
+            loop: true,
+            margin: 29,
+            nav: false,
+            autoplay: true,
+            smartSpeed: 1000,
+            responsive: {
+                0:{
+                    items:1
+                },
+                576:{
+                    items:2
+                },
+                768:{
+                    items:3
+                },
+                992:{
+                    items:4
+                }
             }
-        }
-    });
+        });
+    }
 
 
     // Product Quantity
@@ -123,6 +128,60 @@
         });
 
         // Update login/logout navbar (DEPRECATED - logic moved to load_components.js)
+    });
+
+    // ──────────────────────────────────────────────
+    // Helper: resuelve la URL de imagen de un producto
+    // Centraliza la lógica antes duplicada en varias páginas.
+    // ──────────────────────────────────────────────
+    window.imageUrl = function(img, fallback) {
+        if (fallback === undefined) fallback = 'img/product-1.jpg';
+        if (!img) return fallback;
+        return img.includes('http') ? new URL(img).pathname : img;
+    };
+
+    // ──────────────────────────────────────────────
+    // Gestión de sesión / refresco de token JWT
+    // ──────────────────────────────────────────────
+    function clearSession() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_roles');
+        localStorage.removeItem('username');
+    }
+    window.clearSession = clearSession;
+
+    window.refreshAccessToken = function() {
+        const refresh = localStorage.getItem('refresh_token');
+        if (!refresh) return $.Deferred().reject().promise();
+        return $.ajax({
+            url: '/api/token/refresh/',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ refresh: refresh }),
+            _skipAuthRetry: true
+        }).done(function(res) {
+            if (res.access) localStorage.setItem('access_token', res.access);
+        });
+    };
+
+    // Refresco proactivo: el access token dura 1h, lo renovamos cada 50 min
+    if (localStorage.getItem('refresh_token')) {
+        setInterval(function() {
+            if (localStorage.getItem('refresh_token')) window.refreshAccessToken();
+        }, 50 * 60 * 1000);
+    }
+
+    // Fallback: ante un 401, intenta refrescar UNA vez y reintenta la petición original
+    $(document).ajaxError(function(event, jqXHR, settings) {
+        if (jqXHR.status !== 401 || settings._skipAuthRetry || settings._retried) return;
+        const url = settings.url || '';
+        if (url.indexOf('/api/login/') !== -1 || url.indexOf('/api/token/refresh/') !== -1) return;
+        if (!localStorage.getItem('refresh_token')) return;
+        settings._retried = true;
+        window.refreshAccessToken()
+            .done(function() { $.ajax(settings); })
+            .fail(function() { clearSession(); });
     });
 
     window.addToCart = function(productId, quantity = 1) {
