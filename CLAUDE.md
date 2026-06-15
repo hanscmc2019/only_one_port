@@ -82,6 +82,17 @@ Los roles son **Groups** de Django: `SUPERADMIN`, `ADMIN`, `CUSTOMER`, sembrados
 
 `/` → estático `web/`; `/media/` → imágenes de productos subidas; `/api/`, `/admin/`, `/static/` → proxy hacia `backend:8000`. Las imágenes subidas se guardan en `media/productos/` (el nombre del archivo se deriva del nombre del producto en `Product.product_image_path`).
 
+## Bot de WhatsApp (integrado)
+
+Un bot de ventas por WhatsApp corre junto al e-commerce en el mismo `docker-compose.yml`. Servicios: **evolution-api** (gateway de WhatsApp, `127.0.0.1:8080`), **evolution-postgres** (BD propia de Evolution) + **redis** (su caché), y **n8n** (`127.0.0.1:5678`, el motor del bot: máquina de estados + agente LLM vía OpenRouter).
+
+- **BD compartida con schemas:** el Postgres del e-commerce (`ecommerce_db`) tiene `public` (e-commerce), `bot_data` (dominio del bot: `users`, `chat_sessions`, `orders`, `tickets` + funciones `approve_payment`/etc.) y `n8n` (BD interna de n8n, vía `DB_POSTGRESDB_SCHEMA=n8n`). Evolution mantiene su **propio** Postgres aparte.
+- **Catálogo = vista:** `bot_data.catalog` es una **VISTA** sobre `public.product` (`postgres/init/02_bot_schema.sql`). El agente del bot vende el catálogo real del e-commerce. `sku/stock/is_active` se sintetizan en la vista (no existen aún en `product`).
+- **Lógica del bot:** vive en el workflow de n8n (id `GlC4IjxnLdfRBj3H`), importado desde `_integracion/Bot Híbrido_…json`. Editar en la UI de n8n y re-exportar, o vía CLI (`n8n export/import:workflow`). Flujo: WhatsApp → evolution-api → webhook `POST /webhook/whatsapp` en n8n → router → agente → evolution-api → WhatsApp.
+- **Config:** Evolution lee `.env.evolution` (gitignored); las credenciales de n8n (Postgres + OpenRouter) están en el credential store de n8n. Los `.sql` del bot están en `postgres/init/` (se aplican solos en un volumen nuevo; en uno existente se aplican con `docker compose exec -T postgres psql -U ecommerce_user -d ecommerce_db < postgres/init/02_bot_schema.sql`).
+- **Emparejar WhatsApp:** crear/conectar la instancia `test` en el manager de Evolution (`http://127.0.0.1:8080/manager`, apikey en `.env.evolution`) y escanear el QR.
+- **Monitor de Ventas (panel admin homologado):** página `web/monitor_ventas.html` (solo ADMIN/SUPERADMIN) con 3 columnas (usuarios | órdenes | chat WhatsApp), botones Aprobar/Rechazar pago y Resolver reclamo, y un compositor para **enviar mensajes de texto** al cliente (`POST /api/bot/chat/send/` → Evolution `sendText` con `settings.EVOLUTION_API_*`, se registra como `ADMIN` en `chat_messages`). Backend en `backend/shop/bot_views.py` bajo `/api/bot/*` (SQL crudo sobre `bot_data`, permiso `IsAdminRole`). El comprobante de pago se persiste: el nodo n8n **"Guardar Comprobante"** (rama de pago) hace POST a `/api/bot/payment-proof/` (header `X-Bot-Token` = `settings.BOT_INTERNAL_TOKEN`), que guarda la imagen en `media/comprobantes/<order_id>.<ext>` y setea `orders.payment_proof_url`.
+
 ## Notas
 
 - Seguridad: la config sensible está externalizada a `.env` (ver "Configuración"). `DEBUG`, `SECRET_KEY`, CORS y `ALLOWED_HOSTS` se controlan por env; hay throttling en el login. Pendiente para producción: TLS y rotar la `SECRET_KEY` (la actual venía del repo).

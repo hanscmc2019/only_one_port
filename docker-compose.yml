@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # ──────────────────────────────────────────────
   # NGINX - Servidor de archivos estáticos
@@ -64,6 +62,86 @@ services:
     restart: unless-stopped
     networks:
       - app-network
+
+  # ──────────────────────────────────────────────
+  # EVOLUTION API - Gateway de WhatsApp
+  # ──────────────────────────────────────────────
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: evolution_api
+    env_file:
+      - .env.evolution
+    ports:
+      - "127.0.0.1:8080:8080"   # solo localhost por ahora (proxy nginx luego)
+    depends_on:
+      - evolution-postgres
+      - redis
+    volumes:
+      - evolution_instances:/evolution/instances
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────
+  # EVOLUTION POSTGRES - BD propia de Evolution
+  # ──────────────────────────────────────────────
+  evolution-postgres:
+    image: postgres:15
+    container_name: evolution_postgres
+    environment:
+      POSTGRES_DB: evolution_db
+      POSTGRES_USER: evolution_user
+      POSTGRES_PASSWORD: evolution_pass
+    volumes:
+      - evolution_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U evolution_user -d evolution_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────
+  # REDIS - Caché de Evolution
+  # ──────────────────────────────────────────────
+  redis:
+    image: redis:7
+    container_name: evolution_redis
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ──────────────────────────────────────────────
+  # N8N - Motor del bot (usa el Postgres del e-commerce, schema n8n)
+  # ──────────────────────────────────────────────
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: whatsapp_n8n
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=ecommerce_db
+      - DB_POSTGRESDB_USER=ecommerce_user
+      - DB_POSTGRESDB_PASSWORD=ecommerce_pass
+      - DB_POSTGRESDB_SCHEMA=n8n
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_SECURE_COOKIE=false
+    ports:
+      - "127.0.0.1:5678:5678"   # solo localhost por ahora (proxy nginx luego)
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - n8n_data:/home/node/.n8n
+    restart: unless-stopped
+    networks:
+      - app-network
+
   # ──────────────────────────────────────────────
   # CODE-SERVER - IDE web para todo el proyecto
   # # ──────────────────────────────────────────────
@@ -107,3 +185,9 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  evolution_instances:
+  evolution_postgres_data:
+  redis_data:
+  n8n_data:

@@ -35,13 +35,16 @@ function applyAuthLogic() {
     const is_admin = roles.includes('ADMIN') || roles.includes('SUPERADMIN');
     const is_superadmin = roles.includes('SUPERADMIN');
 
-    // a) Ocultar el link de Mantenimiento si no es Admin o SuperAdmin
+    // Páginas solo para Admin/SuperAdmin
+    const adminPages = ['mantenimiento_productos.html', 'monitor_ventas.html'];
+
+    // a) Ocultar los links de páginas admin si no es Admin o SuperAdmin
     if (!is_admin) {
-        $('a[href="mantenimiento_productos.html"]').hide();
+        adminPages.forEach(p => $(`a[href="${p}"]`).hide());
     }
 
     // b) Redirección forzosa si intenta acceder escribiendo la URL
-    if (window.location.pathname.includes('mantenimiento_productos.html') && !is_admin) {
+    if (!is_admin && adminPages.some(p => window.location.pathname.includes(p))) {
         window.location.href = 'index.html';
     }
 

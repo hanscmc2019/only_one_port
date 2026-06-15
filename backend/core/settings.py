@@ -141,6 +141,14 @@ REST_FRAMEWORK = {
 # Número de WhatsApp para el checkout (configurable por env).
 WHATSAPP_PHONE = os.environ.get('WHATSAPP_PHONE', '51923949691')
 
+# Token compartido para la ingesta interna de comprobantes desde n8n.
+BOT_INTERNAL_TOKEN = os.environ.get('BOT_INTERNAL_TOKEN', 'cambia-este-token-interno')
+
+# Evolution API (para que el panel admin envíe mensajes de WhatsApp).
+EVOLUTION_API_URL = os.environ.get('EVOLUTION_API_URL', 'http://evolution-api:8080')
+EVOLUTION_API_KEY = os.environ.get('EVOLUTION_API_KEY', '123456.+az1')
+EVOLUTION_INSTANCE = os.environ.get('EVOLUTION_INSTANCE', 'test')
+
 from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),

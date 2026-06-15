@@ -38,6 +38,7 @@ Hay 3 roles (más el visitante anónimo). Son **Groups de Django**, sembrados po
 | Fusión de carrito al loguearse | — | ✅ | ✅ | ✅ |
 | Mantenimiento de productos/categorías (CRUD) | ❌ | ❌ | ✅ | ✅ |
 | Ventas / inventario (`/api/sales/`, `/api/inventory/`) | ❌ | ❌ | ✅ | ✅ |
+| Monitor de Ventas del bot (`monitor_ventas.html`, `/api/bot/*`) | ❌ | ❌ | ✅ | ✅ |
 | Panel de admin de Django (`/admin/`) | ❌ | ❌ | ❌ | ✅ |
 
 ### Invitado (anónimo)
@@ -67,4 +68,5 @@ Hereda todo lo del ADMIN y además:
 | `POST/PUT/DELETE /api/products/`, `/api/categories/` | ❌ | ❌ | ✅ | ✅ |
 | `/api/cart/*`, `/api/checkout/whatsapp/` | ✅ | ✅ | ✅ | ✅ |
 | `/api/sales/`, `/api/inventory/` | ❌ | ❌ | ✅ | ✅ |
+| `/api/bot/*` (monitor del bot) | ❌ | ❌ | ✅ | ✅ |
 | `/admin/` (Django) | ❌ | ❌ | ❌ | ✅ |

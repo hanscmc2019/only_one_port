@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <title>EShopper - Monitor de Ventas</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+    <link href="img/favicon.ico" rel="icon">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <link href="css/theme.css" rel="stylesheet">
+
+    <style>
+        .monitor-col { height: calc(100vh - 50px); min-height: 380px; display: flex; flex-direction: column; overflow: hidden; }
+        .monitor-col .panel-head { font-weight: 600; padding: .6rem .9rem; border-bottom: 1px solid #eef0f3; background: #fafbfc; flex-shrink: 0; }
+        .monitor-col .panel-body { overflow-y: auto; flex: 1; min-height: 0; }
+        .monitor-card { background: #fff; border: 1px solid #eef0f3; border-radius: 8px; overflow: hidden; }
+
+        /* Lista de usuarios / órdenes */
+        .li-item { cursor: pointer; padding: .65rem .9rem; border-bottom: 1px solid #f1f2f4; transition: background .15s; }
+        .li-item:hover { background: #f7f8fa; }
+        .li-item.active { background: var(--brand-secondary); border-left: 3px solid var(--brand-primary); }
+        .li-item .sub { font-size: 12px; color: #9aa0a6; }
+        .need-action { box-shadow: inset 3px 0 0 #f59e0b; }
+
+        /* Badges de estado */
+        .st { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+        .s-BOT_ACTIVE { background: #dcfce7; color: #166534; }
+        .s-PENDING_PAYMENT_APPROVAL { background: #ffedd5; color: #9a3412; }
+        .s-PAYMENT_IN_REVIEW { background: #dbeafe; color: #1e40af; }
+        .s-HUMAN_TAKEOVER { background: #fee2e2; color: #991b1b; }
+        .s-CLAIM_OPEN { background: #ede9fe; color: #5b21b6; }
+        .s-PENDING { background: #ffedd5; color: #9a3412; }
+        .s-PAID { background: #dcfce7; color: #166534; }
+        .s-CANCELLED { background: #f3f4f6; color: #6b7280; }
+        .op { font-family: ui-monospace, monospace; font-size: 11px; color: #6b7280; }
+
+        /* Chat estilo WhatsApp */
+        #chat-body { background: #e5ddd5; padding: .7rem; display: flex; flex-direction: column; gap: .35rem; }
+        .bubble { max-width: 72%; width: fit-content; padding: .35rem .55rem; border-radius: 7px;
+                  font-size: 13px; line-height: 1.35; word-wrap: break-word;
+                  overflow-wrap: anywhere; box-shadow: 0 1px .5px rgba(0,0,0,.13); }
+        .bubble .msg { white-space: pre-wrap; }   /* preserva los saltos de línea del mensaje, sin heredar la indentación del HTML */
+        .bubble .t { display: block; font-size: 10px; line-height: 1; color: #667781; text-align: right; margin-top: 2px; }
+        .b-in  { background: #fff;     align-self: flex-start; border-top-left-radius: 0; }
+        .b-out { background: #dcf8c6;  align-self: flex-end;   border-top-right-radius: 0; }
+        .b-out .who { display: block; font-size: 10px; font-weight: 700; color: #1e7a46; margin-bottom: 1px; }
+        .chat-empty { color: #9aa0a6; text-align: center; padding: 2rem; }
+        .proof-thumb { max-width: 90px; border-radius: 6px; border: 1px solid #e5e7eb; cursor: pointer; }
+
+        /* Compositor de mensajes del admin */
+        .chat-composer { flex-shrink: 0; display: flex; gap: .4rem; padding: .5rem; border-top: 1px solid #eef0f3; background: #f7f8fa; }
+        .chat-composer input { flex: 1; border: 1px solid #d6dade; border-radius: 18px; padding: .4rem .85rem; font-size: 13px; outline: none; }
+        .chat-composer input:disabled { background: #eef0f3; }
+        .chat-composer button { border-radius: 50%; width: 36px; height: 36px; padding: 0; flex-shrink: 0; }
+    </style>
+</head>
+
+<body>
+    <div id="topbar-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Page Header -->
+    <div class="container-fluid bg-secondary mb-3">
+        <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 90px">
+            <h2 class="font-weight-semi-bold text-uppercase m-0">Monitor de Ventas</h2>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="d-flex justify-content-end align-items-center mb-2">
+            <label class="m-0 mr-3 small"><input type="checkbox" id="auto" checked> Auto-actualizar</label>
+            <button class="btn btn-sm btn-outline-secondary" onclick="refreshAll()"><i class="fa fa-sync"></i> Actualizar</button>
+            <span class="small text-muted ml-3" id="updated">—</span>
+        </div>
+
+        <div class="row">
+            <!-- IZQUIERDA: Usuarios -->
+            <div class="col-lg-3 col-md-12 mb-3">
+                <div class="monitor-card monitor-col">
+                    <div class="panel-head"><i class="fa fa-users text-primary mr-2"></i>Usuarios</div>
+                    <div class="panel-body" id="users-list">
+                        <div class="chat-empty"><i class="fa fa-spinner fa-spin"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CENTRO: Órdenes -->
+            <div class="col-lg-4 col-md-12 mb-3">
+                <div class="monitor-card monitor-col">
+                    <div class="panel-head d-flex justify-content-between align-items-center">
+                        <span><i class="fa fa-receipt text-primary mr-2"></i>Órdenes <span id="orders-scope" class="small text-muted"></span></span>
+                        <button class="btn btn-sm btn-link p-0 d-none" id="btn-all-orders" onclick="showAllOrders()">Ver todas</button>
+                    </div>
+                    <div class="panel-body p-2" id="orders-list">
+                        <div class="chat-empty">Sin selección</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DERECHA: Chat -->
+            <div class="col-lg-5 col-md-12 mb-3">
+                <div class="monitor-card monitor-col">
+                    <div class="panel-head"><i class="fab fa-whatsapp text-success mr-2"></i><span id="chat-title">Chat</span></div>
+                    <div class="panel-body" id="chat-body">
+                        <div class="chat-empty">Selecciona un usuario para ver su conversación.</div>
+                    </div>
+                    <div class="chat-composer">
+                        <input type="text" id="chat-input" placeholder="Escribe un mensaje…" disabled
+                               onkeydown="if(event.key==='Enter'){event.preventDefault();sendMessage();}">
+                        <button class="btn btn-primary" id="chat-send" onclick="sendMessage()" disabled title="Enviar">
+                            <i class="fa fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+
+    <script>
+        const API = '/api';
+        let filterUserId = null;    // filtra la lista de órdenes (click en usuario)
+        let highlightUserId = null; // usuario resaltado / chat mostrado
+        let didAutoSelect = false;  // auto-seleccionar el primer usuario al cargar
+
+        const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+        const money = v => v == null ? '—' : 'S/ ' + Number(v).toFixed(2);
+        const time = v => v ? new Date(v).toLocaleString('es-PE') : '';
+        const hhmm = v => v ? new Date(v).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : '';
+
+        $(document).ready(function () {
+            refreshAll();
+            setInterval(() => { if ($('#auto').is(':checked')) refreshAll(); }, 12000);
+        });
+
+        function refreshAll() {
+            loadClients();
+            loadOrders(filterUserId);
+            if (highlightUserId) loadChat(highlightUserId);
+            $('#updated').text('Actualizado ' + new Date().toLocaleTimeString('es-PE'));
+        }
+
+        // ---- IZQUIERDA: usuarios ----
+        function loadClients() {
+            $.ajax({
+                url: `${API}/bot/clients/`, method: 'GET',
+                success: renderClients,
+                error: () => $('#users-list').html('<div class="chat-empty text-danger">Error al cargar usuarios.</div>')
+            });
+        }
+        function renderClients(list) {
+            const c = $('#users-list'); c.empty();
+            if (!list.length) { c.html('<div class="chat-empty">Sin usuarios.</div>'); return; }
+            list.forEach(u => {
+                const act = u.ticket_id ? 'need-action' : '';
+                const sel = u.user_id === highlightUserId ? 'active' : '';
+                c.append(`
+                    <div class="li-item ${act} ${sel}" onclick="selectUser(${u.user_id})">
+                        <div class="d-flex justify-content-between">
+                            <b>${esc(u.name || 'Sin nombre')}</b>
+                            <span class="st s-${u.current_state}">${u.current_state}</span>
+                        </div>
+                        <div class="sub">${esc(u.phone)}
+                            ${u.ticket_id ? `· <span class="text-warning">● ${esc(u.ticket_type)}</span>` : ''}
+                        </div>
+                    </div>`);
+            });
+            // Al primer cargado, seleccionar al usuario más urgente (el primero) para no abrir vacío
+            if (!didAutoSelect && !highlightUserId && list.length) {
+                didAutoSelect = true;
+                selectUser(list[0].user_id);
+            }
+        }
+
+        function selectUser(uid) {
+            filterUserId = uid;
+            highlightUserId = uid;
+            $('#btn-all-orders').removeClass('d-none');
+            $('#orders-scope').text('(del usuario)');
+            loadClients();
+            loadOrders(uid);
+            loadChat(uid);
+        }
+
+        function showAllOrders() {
+            filterUserId = null;
+            $('#btn-all-orders').addClass('d-none');
+            $('#orders-scope').text('');
+            loadOrders(null);
+        }
+
+        // ---- CENTRO: órdenes ----
+        function loadOrders(uid) {
+            const url = uid ? `${API}/bot/orders/?user_id=${uid}` : `${API}/bot/orders/`;
+            $.ajax({
+                url, method: 'GET',
+                success: renderOrders,
+                error: () => $('#orders-list').html('<div class="chat-empty text-danger">Error al cargar órdenes.</div>')
+            });
+        }
+        function renderOrders(list) {
+            const c = $('#orders-list'); c.empty();
+            if (!list.length) { c.html('<div class="chat-empty">Sin órdenes.</div>'); return; }
+            list.forEach(o => {
+                let items = '';
+                try { items = (o.items || []).map(i => `${i.qty}× ${esc(i.name || i.sku)}`).join(', '); } catch (e) { }
+                const proof = o.payment_proof_url
+                    ? `<img src="${o.payment_proof_url}" class="proof-thumb mt-2" onclick="window.open('${o.payment_proof_url}','_blank')">` : '';
+                let actions = '';
+                if (o.ticket_type === 'PAYMENT_VALIDATION' && o.ticket_status !== 'CLOSED') {
+                    actions = `
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-success" onclick="event.stopPropagation();approve(${o.id})"><i class="fa fa-check"></i> Aprobar</button>
+                            <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();reject(${o.id})"><i class="fa fa-times"></i> Rechazar</button>
+                        </div>`;
+                } else if (o.ticket_type === 'CLAIM' && o.ticket_status !== 'CLOSED') {
+                    actions = `<div class="mt-2"><button class="btn btn-sm btn-info" onclick="event.stopPropagation();resolve(${o.ticket_id})">Resolver reclamo</button></div>`;
+                }
+                const selUser = o.user_id === highlightUserId ? 'border-primary' : '';
+                c.append(`
+                    <div class="card mb-2 ${selUser}" style="cursor:pointer" onclick="selectOrder(${o.user_id})">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between">
+                                <b>Orden #${o.id}</b>
+                                <span class="st s-${o.status}">${o.status}</span>
+                            </div>
+                            <div class="small">${money(o.total_amount)} · <span class="text-muted">${esc(o.name || o.phone)}</span></div>
+                            <div class="small text-muted">${esc(items)}</div>
+                            ${o.payment_operation_code ? `<div class="op">op: ${esc(o.payment_operation_code)}</div>` : ''}
+                            ${proof}
+                            ${actions}
+                        </div>
+                    </div>`);
+            });
+        }
+
+        // Click en orden: solo resalta al usuario a la izquierda y muestra su chat (no oculta órdenes)
+        function selectOrder(uid) {
+            highlightUserId = uid;
+            loadClients();
+            loadChat(uid);
+        }
+
+        // ---- DERECHA: chat ----
+        function loadChat(uid) {
+            $('#chat-input, #chat-send').prop('disabled', false);  // habilita el compositor al haber usuario
+            $.ajax({
+                url: `${API}/bot/chat/?user_id=${uid}`, method: 'GET',
+                success: renderChat,
+                error: () => $('#chat-body').html('<div class="chat-empty text-danger">Error al cargar el chat.</div>')
+            });
+        }
+        function renderChat(msgs) {
+            const c = $('#chat-body'); c.empty();
+            $('#chat-title').text('Chat');
+            if (!msgs.length) { c.html('<div class="chat-empty">Sin mensajes.</div>'); return; }
+            msgs.forEach(m => {
+                const inbound = m.sender_type === 'USER';
+                const who = inbound ? '' : `<span class="who">${esc(m.sender_type)}</span>`;
+                c.append(
+                    `<div class="bubble ${inbound ? 'b-in' : 'b-out'}">${who}<span class="msg">${esc(m.content)}</span><span class="t">${hhmm(m.created_at)}</span></div>`
+                );
+            });
+            c.scrollTop(c[0].scrollHeight);
+        }
+
+        // ---- Acciones ----
+        function doAction(url, label) {
+            if (!confirm('¿Confirmas ' + label + '?')) return;
+            $.ajax({
+                url, method: 'POST',
+                success: () => { refreshAll(); },
+                error: () => alert('Error al ejecutar la acción.')
+            });
+        }
+        const approve = id => doAction(`${API}/bot/orders/${id}/approve/`, 'APROBAR el pago');
+        const reject = id => doAction(`${API}/bot/orders/${id}/reject/`, 'RECHAZAR el pago');
+        const resolve = id => doAction(`${API}/bot/tickets/${id}/resolve/`, 'marcar el reclamo como RESUELTO');
+
+        // ---- Enviar mensaje (admin -> WhatsApp del usuario) ----
+        function sendMessage() {
+            const text = $('#chat-input').val().trim();
+            if (!text || !highlightUserId) return;
+            const $in = $('#chat-input'), $btn = $('#chat-send');
+            $in.prop('disabled', true); $btn.prop('disabled', true);
+            $.ajax({
+                url: `${API}/bot/chat/send/`, method: 'POST', contentType: 'application/json',
+                data: JSON.stringify({ user_id: highlightUserId, text }),
+                success: () => { $in.val(''); loadChat(highlightUserId); },
+                error: (xhr) => alert('No se pudo enviar: ' + (xhr.responseJSON?.error || 'error de conexión')),
+                complete: () => { $in.prop('disabled', false); $btn.prop('disabled', false); $in.focus(); }
+            });
+        }
+    </script>
+    <script src="js/load_components.js"></script>
+</body>
+
+</html>

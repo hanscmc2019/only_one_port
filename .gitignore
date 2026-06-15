@@ -1,5 +1,6 @@
 # Entorno
 .env
+.env.evolution
 
 # Python
 __pycache__/
