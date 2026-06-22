@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>EShopper - Mantenimiento de Productos</title>
+    <title>EShopper - Catálogo de Productos</title>
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
     
     <!-- Favicon -->
@@ -28,7 +28,7 @@
     <!-- Page Header Start -->
     <div class="container-fluid bg-secondary mb-5">
         <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 150px">
-            <h1 class="font-weight-semi-bold text-uppercase mb-3">Mantenimiento de Productos</h1>
+            <h1 class="font-weight-semi-bold text-uppercase mb-3">Catálogo de Productos</h1>
         </div>
     </div>
     <!-- Page Header End -->
@@ -69,12 +69,12 @@
                         <div class="form-group">
                             <label>Categoría Seleccionada</label>
                             <input type="text" class="form-control" id="selected-category-name" readonly placeholder="Selecciona a la izquierda">
-                            <input type="hidden" id="selected-category-id" required>
+                            <input type="hidden" id="selected-category-id">
                         </div>
 
                         <div class="form-group">
                             <label>Nombre del Producto *</label>
-                            <input type="text" class="form-control" id="product-name" required placeholder="Ej: Laptop Gaming">
+                            <input type="text" class="form-control" id="product-name" placeholder="Ej: Laptop Gaming">
                         </div>
                         
                         <div class="form-group">
@@ -83,9 +83,17 @@
                         </div>
                         
                         <div class="form-group">
-                            <label>Precio *</label>
-                            <input type="number" step="1" class="form-control" id="product-price" required placeholder="Ej: 1500">
+                            <label>Precio por menor / normal *</label>
+                            <input type="number" step="1" class="form-control" id="product-price" placeholder="Ej: 1500">
                         </div>
+
+                        <div class="form-group">
+                            <label id="label-wholesale">Precio por mayor / con descuento</label>
+                            <input type="number" step="1" class="form-control" id="product-price-wholesale" placeholder="Opcional">
+                        </div>
+
+                        <!-- El stock NO se gestiona aquí: el catálogo solo define producto y precios.
+                             El stock se inicia en el módulo de Inventario. -->
 
                         <div class="form-group text-center">
                             <label class="d-block text-left">Imagen del Producto</label>
@@ -102,6 +110,25 @@
                             <button class="btn btn-outline-secondary py-2 px-4 w-100" type="button" id="btn-clear">Limpiar Formulario</button>
                         </div>
                     </form>
+                </div>
+
+                <!-- Editor de variantes: solo en tiendas con variantes (ropa) -->
+                <div class="bg-light p-4 border" id="variant-admin" style="display:none;">
+                    <h5 class="font-weight-semi-bold mb-3">Variantes (talla/color)</h5>
+                    <p class="small text-muted" id="variant-admin-hint">Guarda primero el producto; luego administra sus variantes.</p>
+                    <div id="variant-admin-form" style="display:none;">
+                        <!-- Talla/Color son combo editables: lista de valores ya usados (datalist) + texto libre -->
+                        <div class="form-row">
+                            <div class="col"><input type="text" list="sizes-list" autocomplete="off" class="form-control form-control-sm mb-2" id="var-size" placeholder="Talla (ej: M)"></div>
+                            <div class="col"><input type="text" list="colors-list" autocomplete="off" class="form-control form-control-sm mb-2" id="var-color" placeholder="Color (ej: Rojo)"></div>
+                        </div>
+                        <datalist id="sizes-list"></datalist>
+                        <datalist id="colors-list"></datalist>
+                        <small class="text-muted d-block mb-2">El stock de cada variante se inicia en <a href="inventario.html">Inventario</a>.</small>
+                        <button type="button" class="btn btn-sm btn-primary w-100 mb-2" id="btn-add-variant">+ Agregar</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 mb-2" id="btn-cancel-variant" style="display:none;">Cancelar edición</button>
+                        <table class="table table-sm mt-2"><tbody id="variant-list"></tbody></table>
+                    </div>
                 </div>
             </div>
 
@@ -145,9 +172,25 @@
     <script>
         const API_URL = '/api';
         let currentCategoryId = null;
+        let showVariants = false;  // se setea desde la config del negocio
 
         // Al cargar la página
         $(document).ready(function() {
+            // Config del negocio: define si esta tienda usa variantes (talla/color)
+            (window.getStoreConfig ? window.getStoreConfig() : Promise.resolve({})).then(function(cfg) {
+                cfg = cfg || {};
+                showVariants = !!cfg.show_variants;
+                if (cfg.price_wholesale_label) $('#label-wholesale').text(cfg.price_wholesale_label);
+                // La tarjeta de variantes (talla/color) solo aplica en tiendas con variantes.
+                $('#variant-admin').toggle(showVariants);
+                // Cargar categorías ya con la config lista (evita parpadeo de campos)
+                loadCategories();
+            });
+
+            // Agregar / actualizar variante y cancelar edición
+            $('#btn-add-variant').click(saveVariant);
+            $('#btn-cancel-variant').click(resetVariantForm);
+
             // Lógica para previsualización de imagen
             $('#image-preview-container').click(function() {
                 $('#product-image').click();
@@ -164,7 +207,7 @@
                 }
             });
 
-            loadCategories();
+            // (loadCategories se llama dentro del .then de la config, arriba)
 
             // Evento submit del formulario
             $('#product-form').on('submit', function(e) {
@@ -260,7 +303,7 @@
                     }
 
                     products.forEach(p => {
-                        const price = p.price != null ? `S/ ${p.price}` : 'N/A';
+                        const price = p.price_retail != null ? `S/ ${p.price_retail}` : 'N/A';
                         const imgPath = imageUrl(p.image, '');
                         const imgHtml = p.image ? `<img src="${imgPath}" alt="img" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">` : `<span class="text-muted"><i class="fa fa-image"></i></span>`;
                         const row = `
@@ -283,12 +326,21 @@
         // 4. Guardar Producto (POST o PUT)
         function saveProduct() {
             const id = $('#product-id').val();
+            // Validación en JS (reemplaza la nativa, que con campos required ocultos/vacíos
+            // bloqueaba el submit en silencio y el botón "no hacía nada").
+            if (!currentCategoryId) { alert('Selecciona primero una categoría.'); return; }
+            if (!$('#product-name').val().trim()) { alert('El nombre del producto es obligatorio.'); return; }
+            if ($('#product-price').val() === '') { alert('El precio por menor / normal es obligatorio.'); return; }
             let formData = new FormData();
             formData.append('product_name', $('#product-name').val());
             formData.append('details', $('#product-details').val());
             if ($('#product-price').val()) {
-                formData.append('price', $('#product-price').val());
+                formData.append('price_retail', $('#product-price').val());
             }
+            if ($('#product-price-wholesale').val()) {
+                formData.append('price_wholesale', $('#product-price-wholesale').val());
+            }
+            // El catálogo NO gestiona stock ni costo (read-only en el API); se inician en Inventario.
             formData.append('id_category', currentCategoryId);
             
             const fileInput = document.getElementById('product-image');
@@ -309,16 +361,25 @@
                 data: formData,
                 processData: false,
                 contentType: false,
-                success: function() {
+                success: function(resp) {
                     alert('Producto guardado exitosamente');
                     loadProducts(currentCategoryId);
-                    clearFormKeepCategory();
+                    if (showVariants && resp && resp.id) {
+                        // Mantener el producto en edición para administrar sus variantes
+                        $('#product-id').val(resp.id);
+                        $('#btn-save').text('Actualizar Producto').removeClass('btn-primary').addClass('btn-success');
+                        openVariantEditor(resp.id);
+                    } else {
+                        clearFormKeepCategory();
+                    }
                 },
                 error: function(err) {
                     if(err.status === 401) {
                         alert('Tu sesión ha expirado o es inválida. Por favor, cierra sesión y vuelve a ingresar.');
                     } else {
-                        alert('Error al guardar el producto');
+                        let detalle = '';
+                        try { detalle = JSON.stringify(err.responseJSON); } catch(e) {}
+                        alert('Error al guardar el producto (HTTP ' + err.status + '). ' + detalle);
                     }
                     console.error(err);
                 }
@@ -334,8 +395,11 @@
                     $('#product-id').val(p.id);
                     $('#product-name').val(p.product_name);
                     $('#product-details').val(p.details);
-                    $('#product-price').val(p.price);
-                    
+                    $('#product-price').val(p.price_retail);
+                    $('#product-price-wholesale').val(p.price_wholesale);
+
+                    if (showVariants) openVariantEditor(p.id);
+
                     $('#product-image').val('');
                     if (p.image) {
                         const imgPath = imageUrl(p.image, '');
@@ -376,16 +440,136 @@
             });
         }
 
+        // ---- Editor de variantes (solo tiendas con variantes) ----
+        let adminVariants = [];        // variantes del producto en edición
+        let editingVariantId = null;   // si !=null, el form está editando esa variante
+
+        function openVariantEditor(productId) {
+            $('#variant-admin').show();
+            $('#variant-admin-form').show();
+            $('#variant-admin-hint').hide();
+            resetVariantForm();
+            loadVariants(productId);
+            loadVariantOptions();
+        }
+
+        function loadVariants(productId) {
+            $.ajax({
+                url: `${API_URL}/variants/?id_product=${productId}`,
+                method: 'GET',
+                success: function(variants) {
+                    adminVariants = variants;
+                    const tb = $('#variant-list').empty();
+                    if (!variants.length) {
+                        tb.append('<tr><td colspan="4" class="text-muted small">Sin variantes aún.</td></tr>');
+                        return;
+                    }
+                    variants.forEach(v => {
+                        tb.append(`<tr>
+                            <td>${v.size || '-'}</td>
+                            <td>${v.color || '-'}</td>
+                            <td>${v.stock}</td>
+                            <td class="text-nowrap">
+                                <button class="btn btn-sm btn-info" onclick="editVariant(${v.id})"><i class="fa fa-pen"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteVariant(${v.id})"><i class="fa fa-trash"></i></button>
+                            </td>
+                        </tr>`);
+                    });
+                }
+            });
+        }
+
+        // Rellena los combos (datalist) talla/color con los valores ya existentes en BD
+        function loadVariantOptions() {
+            $.ajax({
+                url: `${API_URL}/variants/`,
+                method: 'GET',
+                success: function(variants) {
+                    const sizes = [...new Set(variants.map(v => v.size).filter(Boolean))].sort();
+                    const colors = [...new Set(variants.map(v => v.color).filter(Boolean))].sort();
+                    $('#sizes-list').html(sizes.map(s => `<option value="${s}">`).join(''));
+                    $('#colors-list').html(colors.map(c => `<option value="${c}">`).join(''));
+                }
+            });
+        }
+
+        // Agregar (POST) o, en modo edición, actualizar (PUT) una variante
+        function saveVariant() {
+            const productId = $('#product-id').val();
+            if (!productId) { alert('Guarda primero el producto.'); return; }
+            const token = localStorage.getItem('access_token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+            // El stock NO se envía (read-only en el API); en alta se registra como movimiento.
+            const payload = {
+                id_product: parseInt(productId),
+                size: $('#var-size').val() || null,
+                color: $('#var-color').val() || null
+            };
+            const method = editingVariantId ? 'PUT' : 'POST';
+            const url = editingVariantId ? `${API_URL}/variants/${editingVariantId}/` : `${API_URL}/variants/`;
+            $.ajax({
+                url: url, method: method, headers: headers,
+                contentType: 'application/json', data: JSON.stringify(payload),
+                success: function(resp) {
+                    // El stock de la variante se inicia en Inventario, no aquí.
+                    resetVariantForm();
+                    loadVariants(productId);
+                    loadVariantOptions();
+                },
+                error: function(err) { alert('Error al guardar variante (¿talla/color duplicados?)'); console.error(err); }
+            });
+        }
+
+        function editVariant(id) {
+            const v = adminVariants.find(x => x.id === id);
+            if (!v) return;
+            editingVariantId = id;
+            $('#var-size').val(v.size || '');
+            $('#var-color').val(v.color || '');
+            $('#btn-add-variant').text('Guardar cambios').removeClass('btn-primary').addClass('btn-success');
+            $('#btn-cancel-variant').show();
+        }
+
+        function resetVariantForm() {
+            editingVariantId = null;
+            $('#var-size').val(''); $('#var-color').val('');
+            $('#btn-add-variant').text('+ Agregar').removeClass('btn-success').addClass('btn-primary');
+            $('#btn-cancel-variant').hide();
+        }
+
+        function deleteVariant(id) {
+            if (!confirm('¿Eliminar esta variante?')) return;
+            const token = localStorage.getItem('access_token');
+            const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+            $.ajax({
+                url: `${API_URL}/variants/${id}/`,
+                method: 'DELETE',
+                headers: headers,
+                success: function() {
+                    if (editingVariantId === id) resetVariantForm();
+                    loadVariants($('#product-id').val());
+                    loadVariantOptions();
+                }
+            });
+        }
+
         // Utilidades para limpiar el formulario
         function clearFormKeepCategory() {
             $('#product-id').val('');
             $('#product-name').val('');
             $('#product-details').val('');
             $('#product-price').val('');
+            $('#product-price-wholesale').val('');
             $('#product-image').val('');
             $('#image-preview').hide().attr('src', '');
             $('#image-placeholder-icon').show();
             $('#btn-save').text('Guardar Producto').removeClass('btn-success').addClass('btn-primary');
+            // La tarjeta de variantes solo existe en tiendas con variantes; al limpiar,
+            // vuelve al estado "guarda primero el producto" (sin perder la tarjeta).
+            $('#variant-admin').toggle(showVariants);
+            $('#variant-admin-form').hide();
+            $('#variant-admin-hint').show();
+            $('#variant-list').empty();
         }
 
         function clearForm() {

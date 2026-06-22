@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <title>EShopper - Registrar Venta</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link href="img/favicon.ico" rel="icon">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <link href="css/theme.css" rel="stylesheet">
+</head>
+
+<body>
+    <div id="topbar-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Page Header -->
+    <div class="container-fluid bg-secondary mb-4">
+        <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 120px">
+            <h1 class="font-weight-semi-bold text-uppercase mb-0">Registrar Venta</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid pt-2">
+        <div class="row px-xl-5">
+            <!-- IZQUIERDA: Formulario para agregar productos a la venta -->
+            <div class="col-lg-3 col-md-12 mb-4">
+                <div class="bg-light p-4 border h-100">
+                    <h5 class="font-weight-semi-bold mb-3">Nueva venta</h5>
+                    <form id="sale-form" autocomplete="off">
+                        <div class="form-group">
+                            <label>Nombre del cliente <small class="text-muted">(opcional)</small></label>
+                            <input type="text" class="form-control" id="cust-name" placeholder="Ej: Juan Pérez">
+                        </div>
+                        <div class="form-group">
+                            <label>Nro del cliente <small class="text-muted">(opcional)</small></label>
+                            <input type="text" class="form-control" id="cust-phone" placeholder="Ej: 999888777">
+                        </div>
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <input type="text" class="form-control" id="cat-input" list="cat-list" placeholder="Escribe o elige...">
+                            <datalist id="cat-list"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Producto <small class="text-success font-weight-bold" id="prod-stock"></small></label>
+                            <input type="text" class="form-control" id="prod-input" list="prod-list" placeholder="Elige una categoría primero">
+                            <datalist id="prod-list"></datalist>
+                        </div>
+                        <div class="form-group" id="variant-group" style="display:none;">
+                            <label>Talla / Color <small class="text-success font-weight-bold" id="variant-stock"></small></label>
+                            <input type="text" class="form-control" id="variant-input" list="variant-list" placeholder="Escribe o elige...">
+                            <datalist id="variant-list"></datalist>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-6">
+                                <label>Cantidad</label>
+                                <input type="number" min="1" step="1" class="form-control" id="line-qty" value="1">
+                            </div>
+                            <div class="form-group col-6">
+                                <label>Precio unit. (S/)</label>
+                                <input type="number" min="0" step="0.01" class="form-control" id="line-price" placeholder="0.00">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block"><i class="fa fa-plus mr-1"></i>Agregar</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- MEDIO: Productos de la venta en curso -->
+            <div class="col-lg-4 col-md-12 mb-4">
+                <div class="bg-light p-4 border h-100 d-flex flex-column">
+                    <h5 class="font-weight-semi-bold mb-3">Productos de la venta</h5>
+                    <div class="table-responsive flex-grow-1">
+                        <table class="table table-sm">
+                            <thead class="bg-secondary text-dark">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="col-variant">Talla/Color</th>
+                                    <th class="text-right">Cant.</th>
+                                    <th class="text-right">P.U.</th>
+                                    <th class="text-right">Subtot.</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cart-rows">
+                                <tr><td colspan="6" class="text-center text-muted">Aún no hay productos.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center border-top pt-3 mt-2">
+                        <h5 class="mb-0">Total</h5>
+                        <h4 class="mb-0 text-primary">S/ <span id="cart-total">0.00</span></h4>
+                    </div>
+                    <button type="button" class="btn btn-success btn-block mt-3" id="btn-checkout">
+                        <i class="fa fa-check mr-1"></i>Venta realizada
+                    </button>
+                </div>
+            </div>
+
+            <!-- DERECHA: Filtro + últimas ventas -->
+            <div class="col-lg-5 col-md-12 mb-4">
+                <div class="bg-light p-4 border h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="font-weight-semi-bold mb-0">Últimas ventas</h5>
+                        <button type="button" class="btn btn-sm mr-2 mb-0 variant-color btn-primary" id="btn-all">Todos</button>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-6">
+                            <input type="text" class="form-control form-control-sm" id="filter-cat" list="cat-list" placeholder="Categoría...">
+                        </div>
+                        <div class="form-group col-6">
+                            <input type="text" class="form-control form-control-sm" id="filter-prod" list="filter-prod-list" placeholder="Producto...">
+                            <datalist id="filter-prod-list"></datalist>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="bg-secondary text-dark">
+                                <tr>
+                                    <th>N° orden</th>
+                                    <th>Cliente</th>
+                                    <th>Producto</th>
+                                    <th class="col-variant">Talla/Color</th>
+                                    <th class="text-right">Cant.</th>
+                                    <th class="text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sales-rows">
+                                <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+
+    <script>
+        const API_URL = '/api';
+        let showVariants = false;
+        let categories = [];     // [{id, category_name}]
+        let products = [];       // productos de la categoría elegida en el form izq
+        let variants = [];       // variantes del producto elegido
+        let selProduct = null;   // {id, name, price_retail}
+        let selVariant = null;   // {id, size, color} | null
+        let cart = [];           // [{id_product, name, id_variant, size, color, qty, price}]
+        let filterProducts = []; // productos de la categoría elegida en el filtro der
+
+        $(document).ready(function () {
+            (window.getStoreConfig ? window.getStoreConfig() : Promise.resolve({})).then(function (cfg) {
+                showVariants = !!(cfg && cfg.show_variants);
+                if (!showVariants) $('.col-variant').hide();
+                loadCategories();
+                loadRecentSales();
+            });
+
+            // Form izquierdo: categoría → productos
+            $('#cat-input').on('change', function () {
+                const cat = matchByName(categories, $(this).val(), 'category_name');
+                resetProductPicker();
+                if (cat) loadProductsFor(cat.id, '#prod-list', list => { products = list; });
+            });
+            // producto → precio + variantes
+            $('#prod-input').on('change', function () {
+                selProduct = matchByName(products, $(this).val(), 'product_name');
+                selVariant = null;
+                $('#variant-input').val('');
+                $('#variant-stock').text('');
+                $('#prod-stock').text('');
+                if (!selProduct) { $('#variant-group').hide(); return; }
+                $('#line-price').val(selProduct.price_retail != null ? selProduct.price_retail : '');
+                if (showVariants) {
+                    loadVariants(selProduct.id);   // el stock se muestra al elegir la variante
+                } else {
+                    showStock('#prod-stock', selProduct.stock, selProduct.id, null);
+                }
+            });
+            $('#variant-input').on('change', function () {
+                selVariant = matchVariant($(this).val());
+                if (selVariant) showStock('#variant-stock', selVariant.stock, selProduct.id, selVariant.id);
+                else $('#variant-stock').text('');
+            });
+
+            $('#sale-form').on('submit', function (e) { e.preventDefault(); addLineItem(); });
+            $('#btn-checkout').click(submitSale);
+
+            // Filtro derecho
+            $('#filter-cat').on('change', function () {
+                const cat = matchByName(categories, $(this).val(), 'category_name');
+                $('#filter-prod').val(''); filterProducts = [];
+                if (cat) loadProductsFor(cat.id, '#filter-prod-list', list => { filterProducts = list; });
+                loadRecentSales();
+            });
+            $('#filter-prod').on('change', loadRecentSales);
+            $('#btn-all').click(function () {
+                $('#filter-cat').val(''); $('#filter-prod').val('');
+                $('#filter-prod-list').empty(); filterProducts = [];
+                loadRecentSales();
+            });
+        });
+
+        // Devuelve el objeto cuyo <field> coincide (case-insensitive) con el texto, o null.
+        function matchByName(arr, text, field) {
+            const t = (text || '').trim().toLowerCase();
+            return arr.find(o => (o[field] || '').toLowerCase() === t) || null;
+        }
+        function variantLabel(v) {
+            return [v.size, v.color].filter(Boolean).join(' / ') || ('#' + v.id);
+        }
+        function matchVariant(text) {
+            const t = (text || '').trim().toLowerCase();
+            return variants.find(v => variantLabel(v).toLowerCase() === t) || null;
+        }
+        // Unidades del producto/variante ya agregadas al carrito en curso.
+        function inCartQty(productId, variantId) {
+            return cart.filter(it => it.id_product === productId && it.id_variant === variantId)
+                       .reduce((s, it) => s + it.qty, 0);
+        }
+        // Muestra el stock disponible (base − lo ya agregado al carrito) junto al label.
+        function showStock(sel, baseStock, productId, variantId) {
+            const remaining = (baseStock || 0) - inCartQty(productId, variantId);
+            $(sel).removeClass('text-success text-danger')
+                  .addClass(remaining > 0 ? 'text-success' : 'text-danger')
+                  .text(`· Stock: ${remaining}`);
+        }
+        // Stock disponible del ítem actualmente seleccionado (null si no se conoce).
+        function selectedStock() {
+            if (showVariants) return selVariant ? (selVariant.stock || 0) : null;
+            return selProduct ? (selProduct.stock || 0) : null;
+        }
+        function resetProductPicker() {
+            selProduct = null; selVariant = null; products = [];
+            $('#prod-input').val(''); $('#prod-list').empty();
+            $('#variant-input').val(''); $('#variant-group').hide();
+            $('#prod-stock').text(''); $('#variant-stock').text('');
+            $('#line-price').val('');
+        }
+
+        function loadCategories() {
+            $.ajax({
+                url: `${API_URL}/categories/`, method: 'GET',
+                success: function (cats) {
+                    categories = cats;
+                    const dl = $('#cat-list').empty();
+                    cats.forEach(c => dl.append(`<option value="${c.category_name}">`));
+                }
+            });
+        }
+
+        // Carga productos de una categoría en un datalist; cb(list) opcional.
+        function loadProductsFor(catId, datalistSel, cb) {
+            $.ajax({
+                url: `${API_URL}/products/?id_category=${catId}`, method: 'GET',
+                success: function (prods) {
+                    const dl = $(datalistSel).empty();
+                    prods.forEach(p => dl.append(`<option value="${p.product_name}">`));
+                    if (cb) cb(prods);
+                }
+            });
+        }
+
+        function loadVariants(productId) {
+            $.ajax({
+                url: `${API_URL}/variants/?id_product=${productId}`, method: 'GET',
+                success: function (vs) {
+                    variants = vs || [];
+                    const dl = $('#variant-list').empty();
+                    variants.forEach(v => dl.append(`<option value="${variantLabel(v)}">`));
+                    $('#variant-group').toggle(variants.length > 0);
+                }
+            });
+        }
+
+        // ---- Carrito de la venta ----
+        function addLineItem() {
+            if (!selProduct) { alert('Elige un producto registrado.'); return; }
+            const qty = parseInt($('#line-qty').val());
+            if (!qty || qty < 1) { alert('Ingresa una cantidad válida (mayor a 0).'); return; }
+            const price = parseFloat($('#line-price').val());
+            if (isNaN(price) || price < 0) { alert('Ingresa un precio válido.'); return; }
+
+            if (showVariants && variants.length) {
+                if (!selVariant) { alert('Elige la talla/color.'); return; }
+            }
+            // No permitir agregar fuera del stock disponible (descontando lo ya agregado).
+            const stock = selectedStock();
+            if (stock !== null) {
+                const remaining = stock - inCartQty(selProduct.id, selVariant ? selVariant.id : null);
+                if (qty > remaining) {
+                    alert(`Cantidad fuera del stock disponible (quedan ${remaining}).`);
+                    return;
+                }
+            }
+            cart.push({
+                id_product: selProduct.id,
+                name: selProduct.name,
+                id_variant: selVariant ? selVariant.id : null,
+                size: selVariant ? selVariant.size : null,
+                color: selVariant ? selVariant.color : null,
+                qty: qty,
+                price: price
+            });
+            renderCart();
+            // limpia para la siguiente línea (mantiene cliente)
+            $('#prod-input').val(''); $('#variant-input').val(''); $('#variant-group').hide();
+            $('#prod-stock').text(''); $('#variant-stock').text('');
+            $('#line-qty').val('1'); $('#line-price').val('');
+            selProduct = null; selVariant = null;
+        }
+
+        function renderCart() {
+            const tb = $('#cart-rows').empty();
+            if (!cart.length) {
+                tb.append('<tr><td colspan="6" class="text-center text-muted">Aún no hay productos.</td></tr>');
+            } else {
+                cart.forEach((it, i) => {
+                    const variante = [it.size, it.color].filter(Boolean).join(' / ') || '-';
+                    tb.append(`<tr>
+                        <td>${it.name}</td>
+                        <td class="col-variant">${variante}</td>
+                        <td class="text-right">${it.qty}</td>
+                        <td class="text-right">${it.price.toFixed(2)}</td>
+                        <td class="text-right">${(it.qty * it.price).toFixed(2)}</td>
+                        <td class="text-right"><a href="#" class="text-danger rm-line" data-i="${i}" title="Quitar"><i class="fa fa-times"></i></a></td>
+                    </tr>`);
+                });
+            }
+            if (!showVariants) $('.col-variant').hide();
+            const total = cart.reduce((s, it) => s + it.qty * it.price, 0);
+            $('#cart-total').text(total.toFixed(2));
+            $('.rm-line').click(function (e) {
+                e.preventDefault();
+                cart.splice($(this).data('i'), 1);
+                renderCart();
+            });
+        }
+
+        function submitSale() {
+            if (!cart.length) { alert('Agrega al menos un producto a la venta.'); return; }
+            const payload = {
+                customer_name: $('#cust-name').val() || null,
+                customer_phone: $('#cust-phone').val() || null,
+                items: cart.map(it => ({
+                    id_product: it.id_product, size: it.size, color: it.color,
+                    qty: it.qty, price: it.price
+                })),
+                total: cart.reduce((s, it) => s + it.qty * it.price, 0)
+            };
+            $('#btn-checkout').prop('disabled', true);
+            $.ajax({
+                url: `${API_URL}/sales/`, method: 'POST',
+                contentType: 'application/json', data: JSON.stringify(payload),
+                success: function (res) {
+                    alert('Venta registrada (orden #' + res.order_id + ').');
+                    cart = []; renderCart();
+                    $('#cust-name').val(''); $('#cust-phone').val('');
+                    loadRecentSales();
+                },
+                error: function (err) {
+                    const msg = (err.responseJSON && err.responseJSON.error) || ('HTTP ' + err.status);
+                    alert('No se pudo registrar la venta: ' + msg);
+                },
+                complete: function () { $('#btn-checkout').prop('disabled', false); }
+            });
+        }
+
+        // ---- Últimas ventas (órdenes PAID, agrupadas por orden) ----
+        function loadRecentSales() {
+            const params = [];
+            const cat = matchByName(categories, $('#filter-cat').val(), 'category_name');
+            if (cat) params.push('id_category=' + cat.id);
+            const prod = matchByName(filterProducts, $('#filter-prod').val(), 'product_name');
+            if (prod) params.push('id_product=' + prod.id);
+            const url = `${API_URL}/sales/recent/` + (params.length ? '?' + params.join('&') : '');
+            $.ajax({
+                url: url, method: 'GET',
+                success: function (orders) {
+                    const tb = $('#sales-rows').empty();
+                    if (!orders.length) { tb.append('<tr><td colspan="6" class="text-center text-muted">Sin ventas.</td></tr>'); return; }
+                    orders.forEach(o => {
+                        const fecha = (o.created_at || '').replace('T', ' ').substring(0, 16);
+                        const n = o.items.length;
+                        o.items.forEach((it, idx) => {
+                            const variante = [it.size, it.color].filter(Boolean).join(' / ') || '-';
+                            let row = '<tr>';
+                            if (idx === 0) {  // N° orden y Cliente abarcan todas las filas de la orden
+                                row += `<td rowspan="${n}" class="align-middle"><b>#${o.order_id}</b><div class="small text-muted">${fecha}</div></td>`;
+                                row += `<td rowspan="${n}" class="align-middle">${o.customer}</td>`;
+                            }
+                            row += `<td>${it.name}</td>`;
+                            row += `<td class="col-variant">${variante}</td>`;
+                            row += `<td class="text-right">${it.qty}</td>`;
+                            row += `<td class="text-right">S/ ${it.subtotal.toFixed(2)}</td>`;
+                            row += '</tr>';
+                            tb.append(row);
+                        });
+                    });
+                    if (!showVariants) $('.col-variant').hide();
+                }
+            });
+        }
+    </script>
+    <script src="js/load_components.js"></script>
+</body>
+
+</html>

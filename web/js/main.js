@@ -184,12 +184,14 @@
             .fail(function() { clearSession(); });
     });
 
-    window.addToCart = function(productId, quantity = 1) {
+    window.addToCart = function(productId, quantity = 1, variantId = null) {
+        const payload = { product_id: productId, quantity: quantity };
+        if (variantId) payload.variant_id = variantId;
         $.ajax({
             url: '/api/cart/add/',
             method: 'POST',
             contentType: 'application/json',
-            data: JSON.stringify({ product_id: productId, quantity: quantity }),
+            data: JSON.stringify(payload),
             success: function(response) {
                 // Notificar de forma sutil o usando alert simple
                 alert('¡Producto añadido al carrito exitosamente!');

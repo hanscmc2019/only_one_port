@@ -148,7 +148,8 @@
 
         $(document).ready(function () {
             loadCategories();
-            loadProducts();
+            // Esperar la config del negocio para rotular bien el 2º precio
+            (window.getStoreConfig ? window.getStoreConfig() : Promise.resolve()).then(function () { loadProducts(); });
         });
 
         function loadCategories() {
@@ -203,7 +204,27 @@
 
             filtered.forEach(p => {
                 const imgUrl = imageUrl(p.image);
-                const priceHtml = p.price ? `<h6>S/ ${p.price}</h6>` : '<h6>Precio N/A</h6>';
+                const cfg = window.STORE_CONFIG || {};
+                let priceBlock;
+                if (!p.price_retail && !p.price_wholesale) {
+                    priceBlock = '<h6 class="mb-0">Precio N/A</h6><small>&nbsp;</small>';
+                } else if (cfg.store_type === 'simple') {
+                    // Cosméticos: si hay precio con descuento, ese se destaca (h3) y el normal va tachado (small).
+                    if (p.price_wholesale) {
+                        priceBlock = `<h3 class="mb-0">S/ ${p.price_wholesale}</h3>`
+                                   + `<small class="text-muted"><del>S/ ${p.price_retail}</del></small>`;
+                    } else {
+                        priceBlock = `<h6 class="mb-0">S/ ${p.price_retail}</h6><small>&nbsp;</small>`;
+                    }
+                } else {
+                    // Ropa (variants): si hay precio por mayor, ese se destaca (h3) y el por menor va debajo (small).
+                    if (p.price_wholesale) {
+                        priceBlock = `<h3 class="mb-0">S/ ${p.price_wholesale}</h3>`
+                                   + `<small class="text-muted">S/ ${p.price_retail} por menor</small>`;
+                    } else {
+                        priceBlock = `<h6 class="mb-0">${p.price_retail ? 'S/ ' + p.price_retail : 'Precio N/A'}</h6><small>&nbsp;</small>`;
+                    }
+                }
                 const html = `
                     <div class="col-lg-4 col-md-6 col-sm-12 pb-1">
                         <div class="card product-item border-0 mb-4">
@@ -212,8 +233,8 @@
                             </div>
                             <div class="card-body border-left border-right text-center p-0 pt-4 pb-3">
                                 <h6 class="text-truncate mb-3 px-2">${p.product_name}</h6>
-                                <div class="d-flex justify-content-center">
-                                    ${priceHtml}
+                                <div class="d-flex flex-column align-items-center">
+                                    ${priceBlock}
                                 </div>
                             </div>
                             <div class="card-footer d-flex justify-content-between bg-light border">

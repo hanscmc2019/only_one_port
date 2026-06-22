@@ -60,7 +60,7 @@ h1, h2, h3, h4, h5, h6,
     padding-right: var(--brand-btn-padding-x);
 }
 
-/* Cuadro de subida de imagen (mantenimiento): borde de acento al pasar el mouse */
+/* Cuadro de subida de imagen (catálogo): borde de acento al pasar el mouse */
 #image-preview-container {
     transition: border-color 0.3s ease;
 }

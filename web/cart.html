@@ -164,9 +164,12 @@
 
             cart.items.forEach(item => {
                 const imgUrl = imageUrl(item.image);
+                const variantParts = [item.size, item.color].filter(Boolean);
+                const variantHtml = variantParts.length
+                    ? `<small class="d-block text-muted">${variantParts.join(' / ')}</small>` : '';
                 const row = `
                     <tr>
-                        <td class="align-middle text-left"><img src="${imgUrl}" alt="" style="width: 50px; height: 50px; object-fit: cover;" class="mr-3"> ${item.product_name}</td>
+                        <td class="align-middle text-left"><img src="${imgUrl}" alt="" style="width: 50px; height: 50px; object-fit: cover;" class="mr-3"> ${item.product_name}${variantHtml}</td>
                         <td class="align-middle">S/ ${item.price}</td>
                         <td class="align-middle">
                             <div class="input-group quantity mx-auto" style="width: 100px;">

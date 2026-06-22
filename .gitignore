@@ -1,6 +1,5 @@
-# Entorno
+# Entorno (el .env real no se versiona; .env.example sí, como plantilla)
 .env
-.env.evolution
 
 # Python
 __pycache__/
@@ -17,3 +16,4 @@ media/
 backend/staticfiles/
 
 _integracion/
+.vscode/

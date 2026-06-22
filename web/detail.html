@@ -73,57 +73,20 @@
                     </div>
                     <small class="pt-1">(50 Reviews)</small>
                 </div>
-                <h3 class="font-weight-semi-bold mb-4" id="detail-price">$-.--</h3>
+                <h3 class="font-weight-semi-bold mb-1" id="detail-price">$-.--</h3>
+                <p class="text-muted mb-3" id="detail-wholesale" style="display:none;"></p>
                 <p class="mb-4" id="detail-desc">Cargando descripción...</p>
-                <div class="d-flex mb-3">
-                    <p class="text-dark font-weight-medium mb-0 mr-3">Sizes:</p>
-                    <form>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="size-1" name="size">
-                            <label class="custom-control-label" for="size-1">XS</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="size-2" name="size">
-                            <label class="custom-control-label" for="size-2">S</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="size-3" name="size">
-                            <label class="custom-control-label" for="size-3">M</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="size-4" name="size">
-                            <label class="custom-control-label" for="size-4">L</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="size-5" name="size">
-                            <label class="custom-control-label" for="size-5">XL</label>
-                        </div>
-                    </form>
-                </div>
-                <div class="d-flex mb-4">
-                    <p class="text-dark font-weight-medium mb-0 mr-3">Colors:</p>
-                    <form>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="color-1" name="color">
-                            <label class="custom-control-label" for="color-1">Black</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="color-2" name="color">
-                            <label class="custom-control-label" for="color-2">White</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="color-3" name="color">
-                            <label class="custom-control-label" for="color-3">Red</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="color-4" name="color">
-                            <label class="custom-control-label" for="color-4">Blue</label>
-                        </div>
-                        <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" class="custom-control-input" id="color-5" name="color">
-                            <label class="custom-control-label" for="color-5">Green</label>
-                        </div>
-                    </form>
+                <!-- Variantes (talla/color) — se rellenan dinámicamente solo en tiendas con variantes -->
+                <div id="variant-section" style="display:none;">
+                    <div class="d-flex mb-3 align-items-center">
+                        <p class="text-dark font-weight-medium mb-0 mr-3">Talla:</p>
+                        <div id="variant-sizes" class="d-flex flex-wrap"></div>
+                    </div>
+                    <div class="d-flex mb-3 align-items-center">
+                        <p class="text-dark font-weight-medium mb-0 mr-3">Color:</p>
+                        <div id="variant-colors" class="d-flex flex-wrap"></div>
+                    </div>
+                    <p class="small mb-2" id="variant-stock"></p>
                 </div>
                 <div class="d-flex align-items-center mb-4 pt-2">
                     <div class="input-group quantity mr-3" style="width: 130px;">
@@ -319,43 +282,166 @@
                 return;
             }
 
-            loadProductDetail(currentProductId);
+            // Esperar la config (saber si la tienda usa variantes) antes de pintar
+            (window.getStoreConfig ? window.getStoreConfig() : Promise.resolve()).then(function () {
+                loadProductDetail(currentProductId);
+            });
 
             $('#detail-add-to-cart').click(function (e) {
                 e.preventDefault();
                 const qty = parseInt($('#detail-quantity').val()) || 1;
-                if (typeof addToCart === 'function') {
-                    addToCart(currentProductId, qty);
+                if (typeof addToCart !== 'function') { alert('Función de añadir al carrito no disponible.'); return; }
+                if (currentVariants && currentVariants.length) {
+                    const v = currentSelectedVariant();
+                    if (!v) { alert('Selecciona las opciones (talla/color).'); return; }
+                    if ((v.stock || 0) < 1) { alert('Sin stock para esa combinación.'); return; }
+                    addToCart(currentProductId, qty, v.id);
                 } else {
-                    alert('Función de añadir al carrito no disponible.');
+                    addToCart(currentProductId, qty);
                 }
             });
         });
+
+        let currentVariants = [];
+        let selectedSize = null, selectedColor = null;
+
+        function currentSelectedVariant() {
+            const hasSizes = currentVariants.some(v => v.size);
+            const hasColors = currentVariants.some(v => v.color);
+            return currentVariants.find(v =>
+                (!hasSizes || v.size === selectedSize) &&
+                (!hasColors || v.color === selectedColor)
+            ) || null;
+        }
 
         function loadProductDetail(id) {
             $.ajax({
                 url: `${API_URL}/products/${id}/`,
                 method: 'GET',
                 success: function (product) {
+                    const cfg = window.STORE_CONFIG || {};
                     $('#detail-title').text(product.product_name);
-                    $('#detail-price').text(`S/ ${product.price}`);
+                    const $price = $('#detail-price');
+                    const $wholesale = $('#detail-wholesale');
+                    if (product.price_wholesale) {
+                        if (cfg.store_type === 'simple') {
+                            // Cosméticos: descuento destacado (h3) + precio normal tachado.
+                            $price.text(`S/ ${product.price_wholesale}`);
+                            $wholesale.html(`<del>S/ ${product.price_retail}</del>`).show();
+                        } else {
+                            // Ropa: precio por mayor destacado (h3) + precio por menor debajo.
+                            $price.text(`S/ ${product.price_wholesale} por mayor`);
+                            $wholesale.text(`S/ ${product.price_retail} por menor`).show();
+                        }
+                    } else {
+                        // Sin 2º precio: solo el principal, sin la línea secundaria.
+                        $price.text(`S/ ${product.price_retail}`);
+                        $wholesale.hide().text('');
+                    }
 
                     const desc = product.details || 'No hay descripción disponible.';
                     $('#detail-desc').text(desc);
                     $('#tab-pane-1').html(`<h4 class="mb-3">Product Description</h4><p>${desc}</p>`);
 
                     if (product.image) {
-                        const imgUrl = imageUrl(product.image);
-                        $('#detail-image').attr('src', imgUrl);
+                        $('#detail-image').attr('src', imageUrl(product.image));
                     } else {
                         $('#detail-image').attr('src', 'img/product-1.jpg');
                     }
+
+                    currentVariants = (cfg.show_variants && product.variants) ? product.variants : [];
+                    renderVariants();
                 },
                 error: function (xhr) {
                     alert('Error al cargar el producto.');
                     window.location.href = 'index.html';
                 }
             });
+        }
+
+        function renderVariants() {
+            if (!currentVariants.length) { $('#variant-section').hide(); return; }
+            const sizes = [...new Set(currentVariants.map(v => v.size).filter(Boolean))];
+            const colors = [...new Set(currentVariants.map(v => v.color).filter(Boolean))];
+            const $sizes = $('#variant-sizes').empty();
+            const $colors = $('#variant-colors').empty();
+            sizes.forEach(s => $sizes.append(`<button type="button" class="btn btn-sm btn-outline-secondary mr-2 mb-2 variant-size" data-val="${s}">${s}</button>`));
+            colors.forEach(c => $colors.append(`<button type="button" class="btn btn-sm btn-outline-secondary mr-2 mb-2 variant-color" data-val="${c}">${c}</button>`));
+            $sizes.closest('.d-flex').toggle(sizes.length > 0);
+            $colors.closest('.d-flex').toggle(colors.length > 0);
+            $('#variant-section').show();
+
+            $('.variant-size').click(function () {
+                if ($(this).prop('disabled')) return;
+                const val = $(this).data('val').toString();
+                if (selectedSize === val) {            // clic en la ya elegida → deseleccionar
+                    selectedSize = null;
+                    $(this).removeClass('btn-primary').addClass('btn-outline-secondary');
+                } else {
+                    selectedSize = val;
+                    $('.variant-size').removeClass('btn-primary').addClass('btn-outline-secondary');
+                    $(this).removeClass('btn-outline-secondary').addClass('btn-primary');
+                }
+                reconcileSelection('size');
+            });
+            $('.variant-color').click(function () {
+                if ($(this).prop('disabled')) return;
+                const val = $(this).data('val').toString();
+                if (selectedColor === val) {           // clic en el ya elegido → deseleccionar
+                    selectedColor = null;
+                    $(this).removeClass('btn-primary').addClass('btn-outline-secondary');
+                } else {
+                    selectedColor = val;
+                    $('.variant-color').removeClass('btn-primary').addClass('btn-outline-secondary');
+                    $(this).removeClass('btn-outline-secondary').addClass('btn-primary');
+                }
+                reconcileSelection('color');
+            });
+
+            updateAvailability();
+        }
+
+        // ¿Existe alguna variante con stock para (size, color)? null = "cualquiera".
+        function hasStock(size, color) {
+            return currentVariants.some(v =>
+                (size == null || v.size === size) &&
+                (color == null || v.color === color) &&
+                (v.stock || 0) > 0
+            );
+        }
+
+        // Deshabilita las opciones que no tengan stock dada la otra selección actual.
+        function updateAvailability() {
+            $('.variant-color').each(function () {
+                const ok = hasStock(selectedSize, $(this).data('val').toString());
+                $(this).prop('disabled', !ok).toggleClass('disabled', !ok);
+            });
+            $('.variant-size').each(function () {
+                const ok = hasStock($(this).data('val').toString(), selectedColor);
+                $(this).prop('disabled', !ok).toggleClass('disabled', !ok);
+            });
+        }
+
+        // Tras elegir una dimensión, si la otra quedó incompatible (sin stock), la deselecciona.
+        function reconcileSelection(changed) {
+            if (changed === 'size' && selectedColor && !hasStock(selectedSize, selectedColor)) {
+                selectedColor = null;
+                $('.variant-color').removeClass('btn-primary').addClass('btn-outline-secondary');
+            }
+            if (changed === 'color' && selectedSize && !hasStock(selectedSize, selectedColor)) {
+                selectedSize = null;
+                $('.variant-size').removeClass('btn-primary').addClass('btn-outline-secondary');
+            }
+            updateAvailability();
+            updateVariantStock();
+        }
+
+        function updateVariantStock() {
+            const v = currentSelectedVariant();
+            const $s = $('#variant-stock');
+            if (!v) { $s.text('Selecciona las opciones disponibles.').attr('class', 'small mb-2 text-muted'); return; }
+            if ((v.stock || 0) > 0) { $s.text(`Stock disponible: ${v.stock}`).attr('class', 'small mb-2 text-success'); }
+            else { $s.text('Sin stock para esta combinación.').attr('class', 'small mb-2 text-danger'); }
         }
     </script>
 </body>

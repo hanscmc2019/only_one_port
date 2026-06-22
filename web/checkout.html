@@ -160,9 +160,12 @@
             }
 
             cart.items.forEach(item => {
+                const variantParts = [item.size, item.color].filter(Boolean);
+                const variantHtml = variantParts.length
+                    ? ` <small class="text-muted">(${variantParts.join(' / ')})</small>` : '';
                 const row = `
                     <tr>
-                        <td class="align-middle">${item.product_name}</td>
+                        <td class="align-middle">${item.product_name}${variantHtml}</td>
                         <td class="align-middle text-center">${item.quantity}</td>
                         <td class="align-middle text-right">S/ ${item.price}</td>
                         <td class="align-middle text-right">S/ ${item.subtotal}</td>

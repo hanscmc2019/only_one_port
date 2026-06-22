@@ -1,0 +1,1414 @@
+[
+  {
+    "updatedAt": "2026-06-15T03:31:17.714Z",
+    "createdAt": "2026-06-14T22:17:57.050Z",
+    "id": "GlC4IjxnLdfRBj3H",
+    "name": "Bot Híbrido: Router y Máquina de Estados",
+    "description": null,
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "whatsapp",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "2c207b19-7fd9-4b45-86ea-57d455693bcc",
+        "name": "Webhook - Evolution API",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -9552,
+          736
+        ],
+        "webhookId": "929dd513-4d33-4766-b204-8e1665e2aea7"
+      },
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "OK",
+          "options": {}
+        },
+        "id": "3b66b913-b067-48f9-9714-8169f66cef8b",
+        "name": "Responder 200 OK",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          -9376,
+          496
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst messageType = body.data?.messageType || 'unknown';\nconst phone = body.data?.key?.remoteJid?.replace('@s.whatsapp.net', '').replace('@g.us', '') || '';\nconst fromMe = body.data?.key?.fromMe || false;\nconst text = body.data?.message?.conversation || body.data?.message?.extendedTextMessage?.text || '';\nconst hasImage = messageType === 'imageMessage';\nconst instanceName = body.instance || '';\nconst mediaUrl = body.data?.message?.imageMessage?.url || null;\n\nif (fromMe || body.event !== 'messages.upsert') {\n  return [{ json: { skip: true } }];\n}\n\nreturn [{ json: { skip: false, phone, text, hasImage, mediaUrl, messageType, instanceName } }];"
+        },
+        "id": "523db4ee-5f75-407b-b5cf-4710105b2d82",
+        "name": "Parsear Mensaje",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -9296,
+          736
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond-skip",
+                "leftValue": "={{ $json.skip }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "15abfe62-1804-41c9-9e98-5708457ff8ce",
+        "name": "¿Ignorar mensaje?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -9024,
+          736
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "WITH ins AS (\n  INSERT INTO tienda.users (phone) VALUES ($1)\n  ON CONFLICT (phone) DO UPDATE SET phone = EXCLUDED.phone\n  RETURNING id, phone\n)\nSELECT i.id AS user_id, i.phone,\n       COALESCE(s.current_state, 'BOT_ACTIVE') AS current_state\nFROM ins i\nLEFT JOIN tienda.chat_sessions s ON s.user_id = i.id;",
+          "options": {
+            "queryReplacement": "={{ [ $json.phone ] }}"
+          }
+        },
+        "id": "802ee611-f804-40ba-ac84-895636a6b6dd",
+        "name": "Obtener Estado del Usuario",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -8752,
+          864
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "INSERT INTO tienda.chat_messages (user_id, sender_type, content)\nVALUES ($1, 'USER', $2);",
+          "options": {
+            "queryReplacement": "={{ [ $('Obtener Estado del Usuario').first().json.user_id, $('Parsear Mensaje').first().json.text ] }}"
+          }
+        },
+        "id": "bcb9927f-f40e-43f2-bb7e-74eb24addc3d",
+        "name": "Guardar Mensaje en Historial",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -8752,
+          672
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "rules": {
+            "values": [
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "cond-pending-image",
+                      "leftValue": "={{ $('Obtener Estado del Usuario').last().json.current_state }}",
+                      "rightValue": "PENDING_PAYMENT_APPROVAL",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    },
+                    {
+                      "id": "cond-has-image",
+                      "leftValue": "={{ $('Parsear Mensaje').first().json.hasImage }}",
+                      "rightValue": true,
+                      "operator": {
+                        "type": "boolean",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "VALIDAR_PAGO"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "cond-pending-text",
+                      "leftValue": "={{ $('Obtener Estado del Usuario').last().json.current_state }}",
+                      "rightValue": "PENDING_PAYMENT_APPROVAL",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "PENDING_PAYMENT"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "cond-claim",
+                      "leftValue": "={{ $('Obtener Estado del Usuario').last().json.current_state }}",
+                      "rightValue": "CLAIM_OPEN",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "CLAIM_OPEN"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "cond-payreview",
+                      "leftValue": "={{ $('Obtener Estado del Usuario').last().json.current_state }}",
+                      "rightValue": "PAYMENT_IN_REVIEW",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "PAYMENT_IN_REVIEW"
+              },
+              {
+                "conditions": {
+                  "options": {
+                    "caseSensitive": true,
+                    "leftValue": "",
+                    "typeValidation": "strict",
+                    "version": 2
+                  },
+                  "conditions": [
+                    {
+                      "id": "cond-human",
+                      "leftValue": "={{ $('Obtener Estado del Usuario').last().json.current_state }}",
+                      "rightValue": "HUMAN_TAKEOVER",
+                      "operator": {
+                        "type": "string",
+                        "operation": "equals"
+                      }
+                    }
+                  ],
+                  "combinator": "and"
+                },
+                "renameOutput": true,
+                "outputKey": "HUMAN_TAKEOVER"
+              }
+            ]
+          },
+          "options": {
+            "fallbackOutput": "extra"
+          }
+        },
+        "id": "f3064f6b-df31-4ad9-a942-d08968f4b866",
+        "name": "Router de Estado",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 3.2,
+        "position": [
+          -8512,
+          736
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://evolution-api:8080/chat/getBase64FromMediaMessage/{{ $('Parsear Mensaje').first().json.instanceName }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "__SET_EVOLUTION_API_KEY__"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { \"message\": { \"key\": $('Webhook - Evolution API').first().json.body.data.key }, \"convertToMp4\": false } }}",
+          "options": {}
+        },
+        "id": "9f90df9d-b1bc-4de0-936f-cf397770365e",
+        "name": "Descargar Imagen",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -8224,
+          176
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const r = $input.first().json;\nif (!r || !r.base64) {\n  throw new Error('Evolution no devolvió base64 del comprobante.');\n}\nreturn [{ json: {\n  base64Image: r.base64,\n  mimeType: r.mimetype || 'image/jpeg',\n  phone: $('Parsear Mensaje').first().json.phone\n} }];"
+        },
+        "id": "a4f1986a-1a80-4d9e-9cf8-6ab2764df301",
+        "name": "Preparar Imagen Base64",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -7952,
+          176
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "SELECT o.id AS order_id, o.total_amount, o.status\nFROM tienda.orders o\nJOIN tienda.users u ON u.id = o.user_id\nWHERE u.phone = '{{ $('Parsear Mensaje').first().json.phone }}'\n  AND o.status = 'PENDING'\nORDER BY o.created_at DESC\nLIMIT 1;",
+          "options": {}
+        },
+        "id": "690d2a24-43b2-46a4-be69-71db19cd8942",
+        "name": "Buscar Orden Pendiente",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -7680,
+          176
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://openrouter.ai/api/v1/chat/completions",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"model\": \"openai/gpt-4o\",\n  \"max_tokens\": 250,\n  \"messages\": [{\n    \"role\": \"user\",\n    \"content\": [\n      {\n        \"type\": \"image_url\",\n        \"image_url\": {\n          \"url\": \"data:{{ $('Preparar Imagen Base64').first().json.mimeType }};base64,{{ $('Preparar Imagen Base64').first().json.base64Image }}\",\n          \"detail\": \"low\"\n        }\n      },\n      {\n        \"type\": \"text\",\n        \"text\": \"Analiza este comprobante de pago Yape o Plin. Devuelve SOLO un objeto JSON (sin texto adicional) con estas claves: \\\"monto\\\" (number, el monto transferido), \\\"nro_operacion\\\" (string, el numero o codigo de operacion de la constancia), \\\"destinatario\\\" (string, nombre del destinatario tal como aparece), \\\"fecha_hora\\\" (string, fecha y hora del pago), \\\"app\\\" (\\\"Yape\\\" o \\\"Plin\\\").\"\n      }\n    ]\n  }]\n}",
+          "options": {}
+        },
+        "id": "8bac0a60-33c1-4023-ac88-01b4ef69f483",
+        "name": "Llamar Vision API",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -7408,
+          176
+        ],
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "V8viWG4pBFIPsbMY",
+            "name": "OpenRouter API"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const apiResponse = $input.first().json;\nconst content = apiResponse.choices?.[0]?.message?.content || '';\nconst pendingOrder = $('Buscar Orden Pendiente').first().json;\n\nlet paymentData;\ntry {\n  const match = content.match(/\\{[\\s\\S]*\\}/);\n  paymentData = JSON.parse(match ? match[0] : content);\n} catch (e) {\n  return [{ json: { isValid: false, reason: 'No se pudo leer el comprobante. Por favor envia una imagen mas clara.' } }];\n}\n\nif (!pendingOrder?.order_id) {\n  return [{ json: { isValid: false, reason: 'No encontramos una orden pendiente de pago para tu numero.' } }];\n}\n\nconst montoEsperado = parseFloat(pendingOrder.total_amount);\nconst montoRecibido = parseFloat(paymentData.monto);\nconst isValid = !isNaN(montoRecibido) && Math.abs(montoEsperado - montoRecibido) < 0.5;\n\nconst nroOperacion = (paymentData.nro_operacion ?? '').toString().trim() || 'N/D';\nconst destinatario = (paymentData.destinatario ?? '').toString().trim() || 'N/D';\nconst fechaHora = (paymentData.fecha_hora ?? '').toString().trim() || 'N/D';\nconst app = (paymentData.app ?? '').toString().trim() || 'N/D';\n\nconst adminNotes =\n  `Pago ${app} | N. operacion: ${nroOperacion} | Monto comprobante: S/${montoRecibido} ` +\n  `| Esperado: S/${montoEsperado} | Destinatario: ${destinatario} | Fecha: ${fechaHora}`;\n\nreturn [{ json: {\n  isValid,\n  montoEsperado,\n  montoRecibido: isNaN(montoRecibido) ? 0 : montoRecibido,\n  nroOperacion,\n  destinatario,\n  fechaHora,\n  app,\n  orderId: pendingOrder.order_id,\n  adminNotes,\n  reason: isValid ? 'OK' : `Monto incorrecto. Se esperaba S/${montoEsperado}, se detecto S/${montoRecibido}`\n} }];"
+        },
+        "id": "11f0b31f-9cbe-4f38-8e58-e82cdddc305b",
+        "name": "Parsear y Validar Comprobante",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -7136,
+          176
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            },
+            "conditions": [
+              {
+                "id": "cond-valid",
+                "leftValue": "={{ $json.isValid }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "5705a4b4-66e8-42fb-a246-6e3ef737c3dc",
+        "name": "¿Monto Correcto?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -6864,
+          176
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "UPDATE tienda.orders SET payment_operation_code = $1 WHERE id = $2;",
+          "options": {
+            "queryReplacement": "={{ [ $('Parsear y Validar Comprobante').first().json.nroOperacion, $('Parsear y Validar Comprobante').first().json.orderId ] }}"
+          }
+        },
+        "id": "f80d492b-449e-4eb3-81d0-c81b7fa884b1",
+        "name": "Guardar N° Operación",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -6592,
+          48
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "WITH s AS (\n  INSERT INTO tienda.chat_sessions (user_id, current_state)\n  VALUES ($1, 'PAYMENT_IN_REVIEW')\n  ON CONFLICT (user_id) DO UPDATE SET current_state = 'PAYMENT_IN_REVIEW', last_interaction = NOW()\n)\nINSERT INTO tienda.tickets (user_id, order_id, ticket_type, status, admin_notes)\nVALUES ($1, $2, 'PAYMENT_VALIDATION', 'OPEN', $3);",
+          "options": {
+            "queryReplacement": "={{ [ $('Obtener Estado del Usuario').first().json.user_id, $('Parsear y Validar Comprobante').first().json.orderId, $('Parsear y Validar Comprobante').first().json.adminNotes ] }}"
+          }
+        },
+        "id": "9c1564e7-dc49-44d0-b3d1-5df08fc0de8a",
+        "name": "Crear Ticket de Pago Admin",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -6320,
+          48
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://evolution-api:8080/message/sendText/{{ $('Parsear Mensaje').first().json.instanceName }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "__SET_EVOLUTION_API_KEY__"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={ \"number\": \"{{ $('Parsear Mensaje').first().json.phone }}\", \"text\": \"⏳ Estamos esperando tu comprobante de pago.\\n\\nPor favor realiza el Yape o Plin al número *999-000-000* (Hans) y envíanos la captura de pantalla aquí mismo.\" }",
+          "options": {}
+        },
+        "id": "6b660920-7591-409b-bba2-38518152e935",
+        "name": "Responder: Envía Comprobante",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -7664,
+          528
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://evolution-api:8080/message/sendText/{{ $('Parsear Mensaje').first().json.instanceName }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "__SET_EVOLUTION_API_KEY__"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={ \"number\": \"{{ $('Parsear Mensaje').first().json.phone }}\", \"text\": \"🔁 Tu reclamo está siendo revisado. Un asesor se pondrá en contacto contigo muy pronto. Gracias por tu paciencia.\" }",
+          "options": {}
+        },
+        "id": "cedbbeb7-81d5-4e0f-802e-dc00dea4f1b5",
+        "name": "Responder: Reclamo en Revisión",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -8048,
+          720
+        ]
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $('Parsear Mensaje').first().json.text }}",
+          "options": {
+            "systemMessage": "=Eres un asistente de ventas y soporte de una tienda. Conversas por WhatsApp, en español, de forma cordial y concreta. El ID del cliente ya está disponible: user_id={{ $json.user_id }}. Estado actual del cliente: {{ $json.current_state }}.\n\n## HERRAMIENTAS Y CUÁNDO USARLAS\n\n**catalogo** (SELECT)\nTu fuente ÚNICA de productos, precios y stock. Consúltala SIEMPRE antes de hablar de cualquier producto, precio o disponibilidad. Nunca des precios de memoria. Campos: price_retail (precio principal que cobras), price_wholesale (2º precio: por mayor o con descuento, puede venir vacío) y stock real. Si un producto trae variants (lista de presentaciones talla/color, cada una con su stock), pide al cliente la talla/color antes de cotizar o vender y usa el stock de ESA variante.\n\n**orders** (UPSERT)\n⚠️ SOLO cuando el cliente confirme EXPLÍCITAMENTE que quiere comprar/pagar (\"sí lo compro\", \"hazme el pedido\", \"confirmo\").\n⚠️ NUNCA al solo consultar o cotizar.\n⚠️ REQUISITO: haber consultado catalogo y tener SKUs y precios reales.\n- user_id = {{ $json.user_id }}\n- items = array JSON. OBLIGATORIO, no vacío. Ej: [{\"sku\":\"TV01\",\"name\":\"TV Samsung 55\",\"qty\":1,\"price\":999.00}]\n- total_amount = suma de qty*price\n- status = \"PENDING\"\n\n**chat_sessions** (UPSERT)\nActualiza el estado del cliente tras una acción (user_id={{ $json.user_id }}):\n- Tras crear orden → current_state=\"PENDING_PAYMENT_APPROVAL\"\n- Tras crear ticket → current_state=\"CLAIM_OPEN\"\n\n**tickets** (INSERT)\nSolo cuando el cliente reporte un problema, producto defectuoso o quiera devolución.\n- user_id={{ $json.user_id }}, ticket_type=\"CLAIM\", status=\"OPEN\", admin_notes=descripción del problema.\n\n**consultar_ordenes** (SELECT, solo lectura)\nDevuelve los pedidos del cliente (estado, monto, fecha, N° de operación).\n- user_id = {{ $json.user_id }}\nÚsala cuando el cliente pregunte por el estado de su pedido/orden. NUNCA crees una orden para responder eso.\n\n**cancelar_orden** (acción)\nCancela la orden pendiente del cliente y reactiva el bot (vuelve a BOT_ACTIVE).\n- user_id = {{ $json.user_id }}\nÚsala SOLO cuando el cliente con una orden pendiente de pago pida cancelar/anular su pedido.\n\n## ORIENTACIÓN DE CATÁLOGO\n- Cuando el cliente pregunte qué vendes o busque algo, consulta catalogo y preséntale las opciones relevantes con nombre y precio en S/.\n- Si la búsqueda es ambigua, ofrece las coincidencias más cercanas y pregunta cuál le interesa.\n- No ofrezcas productos sin stock; menciona el stock solo si es bajo o si lo preguntan.\n- No inventes productos ni características que no estén en catalogo.\n\n## ARMAR COTIZACIÓN\nCuando el cliente arme un pedido (uno o varios productos con cantidades) y aún NO confirme compra, presenta una cotización clara, SIN crear la orden todavía:\n- Una línea por producto: nombre — cantidad × precio unitario = subtotal (en S/).\n- Una línea final con el TOTAL en S/.\n- Cierra preguntando si desea confirmar la compra.\nRecalcula la cotización si cambian cantidades o productos. Los precios SIEMPRE salen de catalogo; usa price_retail como precio unitario. Si el producto tiene variants, incluye en cada item del pedido los campos size y color de la variante elegida.\n\n## FLUJO DE VENTA\n1. Consulta catalogo con lo que pide el cliente.\n2. Muéstrale opciones y precios reales.\n3. Si arma pedido, entrégale la cotización (ver arriba) y espera confirmación explícita.\n4. Solo si confirma: (a) crea la orden en orders con los items de la cotización, (b) actualiza chat_sessions a PENDING_PAYMENT_APPROVAL.\n5. Responde: \"✅ Orden creada. Realiza el Yape/Plin al 999-000-000 (Hans) por S/TOTAL y envíame la captura de pantalla.\"\n\n## FLUJO DE RECLAMO\n1. Crea el ticket en tickets.\n2. Actualiza chat_sessions a CLAIM_OPEN.\n3. Confirma al cliente que su reclamo quedó registrado.\n\n## ORDEN PENDIENTE DE PAGO\nSi \"Estado actual del cliente\" es PENDING_PAYMENT_APPROVAL, el cliente ya tiene una orden creada esperando pago:\n- NUNCA crees una orden nueva.\n- Si pide CANCELAR/anular el pedido: confírmaselo y usa cancelar_orden. Luego avísale que su orden fue cancelada.\n- Si no, recuérdale amablemente que realice el Yape/Plin y envíe la captura del comprobante.\n\n## REGLAS\n- Responde SIEMPRE en español, cordial y breve.\n- NUNCA inventes precios, productos ni stock: todo sale de catalogo.\n- Cotizar NO es comprar: usa orders (crear) SOLO ante una confirmación de compra EXPLÍCITA en el mensaje actual.\n- Un saludo, una consulta de catálogo o una pregunta por el estado del pedido NO son confirmación: NUNCA crees una orden en esos casos.\n- Si el cliente pregunta por el estado de su pedido, usa consultar_ordenes.\n- Si el mensaje no es compra ni reclamo, responde normalmente sin usar herramientas de escritura.",
+            "maxIterations": 10
+          }
+        },
+        "id": "5c098f71-9128-4a11-af64-9c80c243e66d",
+        "name": "Agente IA",
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.8,
+        "position": [
+          -7760,
+          1296
+        ]
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "deepseek/deepseek-v4-flash",
+            "mode": "list",
+            "cachedResultName": "deepseek/deepseek-v4-flash"
+          },
+          "options": {
+            "temperature": 0.3
+          }
+        },
+        "id": "dbbec83f-107f-4b81-b524-f29197c61d85",
+        "name": "GPT-4o",
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          -7968,
+          1552
+        ],
+        "credentials": {
+          "openAiApi": {
+            "id": "mKWvvXT6D2QB0INf",
+            "name": "OpenAI account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sessionIdType": "customKey",
+          "sessionKey": "={{ $('Parsear Mensaje').first().json.phone }}"
+        },
+        "id": "0154b3c8-6c10-45fa-a862-2c16361e9101",
+        "name": "Memoria de Conversación",
+        "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+        "typeVersion": 1.3,
+        "position": [
+          -7792,
+          1552
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "select",
+          "schema": {
+            "__rl": true,
+            "mode": "list",
+            "value": "tienda"
+          },
+          "table": {
+            "__rl": true,
+            "mode": "list",
+            "value": "catalog"
+          },
+          "options": {}
+        },
+        "id": "aac79f79-37ea-400a-b6a9-74d9eb581a03",
+        "name": "catalogo",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          -7616,
+          1552
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "INSERT INTO tienda.orders (user_id, items, total_amount, status)\nVALUES ($1, $2::jsonb, $3, $4)\nRETURNING id;",
+          "options": {
+            "queryReplacement": "={{ [ $fromAI('user_id', `ID numerico del cliente`, 'number'), $fromAI('items', `Lista de productos del pedido como TEXTO JSON (un array). Ej: [{\\\"sku\\\":\\\"TV01\\\",\\\"name\\\":\\\"TV Samsung 55\\\",\\\"qty\\\":1,\\\"price\\\":999.00}]`, 'string'), $fromAI('total_amount', `Monto total del pedido en soles`, 'number'), $fromAI('status', `Estado de la orden, normalmente PENDING`, 'string') ] }}"
+          }
+        },
+        "id": "125572d7-1933-482f-b3ce-6a7557503df4",
+        "name": "orders",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          -7440,
+          1552
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "upsert",
+          "schema": {
+            "__rl": true,
+            "mode": "list",
+            "value": "tienda"
+          },
+          "table": {
+            "__rl": true,
+            "mode": "list",
+            "value": "chat_sessions"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "user_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('user_id', ``, 'number') }}",
+              "current_state": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('current_state', `Nuevo estado del cliente: BOT_ACTIVE, PENDING_PAYMENT_APPROVAL, CLAIM_OPEN o HUMAN_TAKEOVER`, 'string') }}"
+            },
+            "matchingColumns": [
+              "user_id"
+            ],
+            "schema": [
+              {
+                "id": "user_id",
+                "displayName": "user_id",
+                "required": true,
+                "defaultMatch": false,
+                "display": true,
+                "type": "number",
+                "canBeUsedToMatch": true
+              },
+              {
+                "id": "current_state",
+                "displayName": "current_state",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": false
+              },
+              {
+                "id": "last_interaction",
+                "displayName": "last_interaction",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "dateTime",
+                "canBeUsedToMatch": false,
+                "removed": true
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "id": "082ba0fa-ba8f-44fc-843a-356fc244fe35",
+        "name": "chat_sessions",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          -7264,
+          1552
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "schema": {
+            "__rl": true,
+            "mode": "list",
+            "value": "tienda"
+          },
+          "table": {
+            "__rl": true,
+            "mode": "list",
+            "value": "tickets"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "user_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('user_id', ``, 'number') }}",
+              "ticket_type": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('ticket_type', `Tipo de ticket. Para reclamos/devoluciones usa 'CLAIM'`, 'string') }}",
+              "status": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('status', `Estado del ticket, normalmente 'OPEN'`, 'string') }}",
+              "admin_notes": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('admin_notes', `Descripcion del problema reportado por el cliente`, 'string') }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "id",
+                "displayName": "id",
+                "required": false,
+                "defaultMatch": true,
+                "display": true,
+                "type": "number",
+                "canBeUsedToMatch": true,
+                "removed": true
+              },
+              {
+                "id": "user_id",
+                "displayName": "user_id",
+                "required": true,
+                "defaultMatch": false,
+                "display": true,
+                "type": "number",
+                "canBeUsedToMatch": false
+              },
+              {
+                "id": "order_id",
+                "displayName": "order_id",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "number",
+                "canBeUsedToMatch": false,
+                "removed": true
+              },
+              {
+                "id": "ticket_type",
+                "displayName": "ticket_type",
+                "required": true,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": false
+              },
+              {
+                "id": "status",
+                "displayName": "status",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": false
+              },
+              {
+                "id": "admin_notes",
+                "displayName": "admin_notes",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "string",
+                "canBeUsedToMatch": false
+              },
+              {
+                "id": "created_at",
+                "displayName": "created_at",
+                "required": false,
+                "defaultMatch": false,
+                "display": true,
+                "type": "dateTime",
+                "canBeUsedToMatch": false,
+                "removed": true
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "id": "9220b2ec-79e6-44d0-8938-5541ae17dc44",
+        "name": "tickets",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          -6864,
+          1568
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://evolution-api:8080/message/sendText/{{ $('Parsear Mensaje').first().json.instanceName }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "__SET_EVOLUTION_API_KEY__"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{\n  {\n  \"number\": $('Webhook - Evolution API').first().json.body.data.key.remoteJid,\n  \"text\": $json.output\n  }\n}}",
+          "options": {}
+        },
+        "id": "5e26a038-a6bb-48f3-9298-3805182f8bd6",
+        "name": "Enviar Respuesta WhatsApp",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -7264,
+          1168
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "INSERT INTO tienda.chat_messages (user_id, sender_type, content)\nVALUES ($1, 'BOT', $2);",
+          "options": {
+            "queryReplacement": "={{ [ $('Obtener Estado del Usuario').first().json.user_id, $json.output ] }}"
+          }
+        },
+        "id": "991fdf95-d9eb-44a8-8cf0-fc6332046fa8",
+        "name": "Guardar Respuesta del Bot",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.5,
+        "position": [
+          -7232,
+          928
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://evolution-api:8080/message/sendText/{{ $('Parsear Mensaje').first().json.instanceName }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "__SET_EVOLUTION_API_KEY__"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"number\": \"{{ $('Webhook - Evolution API').first().json.body.data.key.remoteJid }}\",\n  \"text\": \"❌ El monto detectado no coincide con tu orden.\\n\\n📋 Total de tu orden: S/ {{ $('Parsear y Validar Comprobante').first().json.montoEsperado }}\\n💸 Monto en imagen: S/ {{ $('Parsear y Validar Comprobante').first().json.montoRecibido }}\\n\\nPor favor verifica y envía el comprobante correcto.\"\n}",
+          "options": {}
+        },
+        "id": "7eee951c-067d-4001-b431-161692ddab42",
+        "name": "Avisar: Monto Incorrecto",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -6608,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://evolution-api:8080/message/sendText/{{ $('Parsear Mensaje').first().json.instanceName }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "__SET_EVOLUTION_API_KEY__"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"number\": \"{{ $('Webhook - Evolution API').first().json.body.data.key.remoteJid }}\",\n  \"text\": \"✅ Recibimos tu comprobante de pago. Un asesor lo está revisando y te confirmaremos muy pronto. ¡Gracias por tu compra! 😊\"\n}",
+          "options": {}
+        },
+        "id": "616e3956-51ba-4ae4-8dfe-91acc299de5d",
+        "name": "Avisar: Pago en Revisión",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -5888,
+          48
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://evolution-api:8080/message/sendText/{{ $('Parsear Mensaje').first().json.instanceName }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "__SET_EVOLUTION_API_KEY__"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={ \"number\": \"{{ $('Parsear Mensaje').first().json.phone }}\", \"text\": \"⏳ Tu pago sigue en revisión. Un asesor lo está validando y te confirmaremos muy pronto. ¡Gracias por tu paciencia! 😊\" }",
+          "options": {}
+        },
+        "id": "a23cd7df-a187-4d81-a821-023f004022f2",
+        "name": "Responder: Pago en Revisión",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -8048,
+          880
+        ]
+      },
+      {
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Cancela la orden pendiente del cliente (status PENDING -> CANCELLED) y reactiva el bot (sesion a BOT_ACTIVE). Usar solo cuando el cliente pida cancelar o anular su pedido pendiente de pago.",
+          "operation": "executeQuery",
+          "query": "SELECT tienda.cancel_pending_order($1);",
+          "options": {
+            "queryReplacement": "={{ [ $fromAI('user_id', `ID numerico del cliente`, 'number') ] }}"
+          }
+        },
+        "id": "296036fc-6c07-4fc4-ba46-22d6a421f63b",
+        "name": "cancelar_orden",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          -7072,
+          1552
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond-cancel",
+                "leftValue": "={{ /cancel|anul|ya no|no quiero|olv[ií]d|d[eé]jal|mejor no/i.test($('Parsear Mensaje').first().json.text) }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "6091dfbf-3bb3-4bd3-965e-ec71f8295d3e",
+        "name": "¿Cancelar?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          -8048,
+          512
+        ]
+      },
+      {
+        "parameters": {
+          "descriptionType": "manual",
+          "toolDescription": "Consulta las ordenes/pedidos del cliente (estado, monto, fecha, N de operacion). Usar cuando el cliente pregunte por el estado de su pedido u orden. Es SOLO LECTURA, no crea ni cambia nada.",
+          "operation": "executeQuery",
+          "query": "SELECT id AS orden, total_amount AS monto, status AS estado,\n       payment_operation_code AS nro_operacion,\n       to_char(created_at,'DD/MM/YYYY HH24:MI') AS fecha, items\nFROM tienda.orders WHERE user_id = $1\nORDER BY created_at DESC LIMIT 5;",
+          "options": {
+            "queryReplacement": "={{ [ $fromAI('user_id', `ID numerico del cliente`, 'number') ] }}"
+          }
+        },
+        "id": "e07536db-583a-4721-8305-cffdcf5d1bcf",
+        "name": "consultar_ordenes",
+        "type": "n8n-nodes-base.postgresTool",
+        "typeVersion": 2.6,
+        "position": [
+          -7552,
+          1168
+        ],
+        "credentials": {
+          "postgres": {
+            "id": "H04X1v7R4rxPQoaz",
+            "name": "Postgres account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://backend:8000/api/bot/payment-proof/",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": []
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ { \"order_id\": $('Buscar Orden Pendiente').first().json.order_id, \"base64\": $('Preparar Imagen Base64').first().json.base64Image, \"mimetype\": $('Preparar Imagen Base64').first().json.mimeType } }}",
+          "options": {}
+        },
+        "id": "c7fbacc2-52f0-43c6-baa9-55d0ddfb747c",
+        "name": "Guardar Comprobante",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          -6096,
+          48
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook - Evolution API": {
+        "main": [
+          [
+            {
+              "node": "Responder 200 OK",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Parsear Mensaje",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parsear Mensaje": {
+        "main": [
+          [
+            {
+              "node": "¿Ignorar mensaje?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Ignorar mensaje?": {
+        "main": [
+          [],
+          [
+            {
+              "node": "Obtener Estado del Usuario",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Obtener Estado del Usuario": {
+        "main": [
+          [
+            {
+              "node": "Router de Estado",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Guardar Mensaje en Historial",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Router de Estado": {
+        "main": [
+          [
+            {
+              "node": "Descargar Imagen",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "¿Cancelar?",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Responder: Reclamo en Revisión",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Responder: Pago en Revisión",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [],
+          [
+            {
+              "node": "Agente IA",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Descargar Imagen": {
+        "main": [
+          [
+            {
+              "node": "Preparar Imagen Base64",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Preparar Imagen Base64": {
+        "main": [
+          [
+            {
+              "node": "Buscar Orden Pendiente",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Buscar Orden Pendiente": {
+        "main": [
+          [
+            {
+              "node": "Llamar Vision API",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Llamar Vision API": {
+        "main": [
+          [
+            {
+              "node": "Parsear y Validar Comprobante",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Parsear y Validar Comprobante": {
+        "main": [
+          [
+            {
+              "node": "¿Monto Correcto?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Monto Correcto?": {
+        "main": [
+          [
+            {
+              "node": "Guardar N° Operación",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Avisar: Monto Incorrecto",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Crear Ticket de Pago Admin": {
+        "main": [
+          [
+            {
+              "node": "Guardar Comprobante",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Agente IA": {
+        "main": [
+          [
+            {
+              "node": "Enviar Respuesta WhatsApp",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Guardar Respuesta del Bot",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "GPT-4o": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Memoria de Conversación": {
+        "ai_memory": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "ai_memory",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "catalogo": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "orders": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "chat_sessions": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "tickets": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Guardar N° Operación": {
+        "main": [
+          [
+            {
+              "node": "Crear Ticket de Pago Admin",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "cancelar_orden": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "¿Cancelar?": {
+        "main": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Responder: Envía Comprobante",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "consultar_ordenes": {
+        "ai_tool": [
+          [
+            {
+              "node": "Agente IA",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Guardar Comprobante": {
+        "main": [
+          [
+            {
+              "node": "Avisar: Pago en Revisión",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1",
+      "binaryMode": "separate"
+    },
+    "staticData": null,
+    "meta": null,
+    "nodeGroups": [],
+    "pinData": {},
+    "versionId": "52a82725-ec8f-47f1-be8b-e31a26259c12",
+    "activeVersionId": "74c954ab-3500-4c62-801a-a8d20a5e9ce8",
+    "versionCounter": 130,
+    "triggerCount": 1,
+    "tags": [],
+    "shared": [
+      {
+        "updatedAt": "2026-06-14T22:17:57.050Z",
+        "createdAt": "2026-06-14T22:17:57.050Z",
+        "role": "workflow:owner",
+        "workflowId": "GlC4IjxnLdfRBj3H",
+        "projectId": "B775WUCrgzpwpsKX",
+        "project": {
+          "updatedAt": "2026-06-14T22:25:43.235Z",
+          "createdAt": "2026-06-14T22:16:34.307Z",
+          "id": "B775WUCrgzpwpsKX",
+          "name": "Hans Marcelo <hanscarlos2019@gmail.com>",
+          "type": "personal",
+          "icon": null,
+          "description": null,
+          "creatorId": "a66bc00e-1dd9-4026-bb62-78bfc816e9be"
+        }
+      }
+    ],
+    "versionMetadata": {
+      "name": null,
+      "description": null
+    }
+  }
+]

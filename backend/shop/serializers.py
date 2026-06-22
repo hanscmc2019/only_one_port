@@ -1,16 +1,24 @@
 from rest_framework import serializers
-from .models import Category, Product, Cart, CartItem, Sale, Inventory
+from .models import Category, Product, ProductVariant, Cart, CartItem, Inventory
 
 class CartItemSerializer(serializers.ModelSerializer):
     product_name = serializers.ReadOnlyField(source='product.product_name')
-    price = serializers.ReadOnlyField(source='product.price')
+    price = serializers.ReadOnlyField(source='product.price_retail')  # precio unitario efectivo
+    size = serializers.SerializerMethodField()
+    color = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
     subtotal = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
-        fields = ['id', 'product', 'product_name', 'price', 'image', 'quantity', 'subtotal']
-        
+        fields = ['id', 'product', 'variant', 'product_name', 'price', 'size', 'color', 'image', 'quantity', 'subtotal']
+
+    def get_size(self, obj):
+        return obj.variant.size if obj.variant_id else None
+
+    def get_color(self, obj):
+        return obj.variant.color if obj.variant_id else None
+
     def get_image(self, obj):
         if obj.product.image:
             request = self.context.get('request')
@@ -20,7 +28,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         return None
 
     def get_subtotal(self, obj):
-        return (obj.quantity or 0) * (obj.product.price or 0)
+        return (obj.quantity or 0) * (obj.product.price_retail or 0)
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
@@ -31,31 +39,59 @@ class CartSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'is_active', 'created_at', 'items', 'total']
 
     def get_total(self, obj):
-        return sum((item.quantity or 0) * (item.product.price or 0) for item in obj.items.all())
+        return sum((item.quantity or 0) * (item.product.price_retail or 0) for item in obj.items.all())
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = '__all__'
 
+class ProductVariantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVariant
+        fields = ['id', 'id_product', 'size', 'color', 'stock', 'sku']
+        # El stock NO se edita aquí: solo cambia vía movimientos de inventario (kardex).
+        read_only_fields = ['stock']
+
 class ProductSerializer(serializers.ModelSerializer):
+    variants = ProductVariantSerializer(many=True, read_only=True)
+
     class Meta:
         model = Product
         fields = '__all__'
+        # stock y cost los mantiene el inventario (movimientos/trigger), no la edición de producto.
+        read_only_fields = ['stock', 'cost']
 
-    def validate_price(self, value):
+    def validate_price_retail(self, value):
+        if value is not None and value < 0:
+            raise serializers.ValidationError('El precio no puede ser negativo.')
+        return value
+
+    def validate_price_wholesale(self, value):
         if value is not None and value < 0:
             raise serializers.ValidationError('El precio no puede ser negativo.')
         return value
 
 class InventorySerializer(serializers.ModelSerializer):
+    # Campos de solo lectura para mostrar el kardex sin joins en el frontend.
+    product_name = serializers.ReadOnlyField(source='id_product.product_name')
+    size = serializers.SerializerMethodField()
+    color = serializers.SerializerMethodField()
+
     class Meta:
         model = Inventory
-        fields = '__all__'
+        fields = ['id', 'id_product', 'id_variant', 'product_name', 'size', 'color',
+                  'movement_type', 'quantity', 'unit_cost', 'note', 'created_at']
 
-class SaleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Sale
-        fields = '__all__'
+    def get_size(self, obj):
+        return obj.id_variant.size if obj.id_variant_id else None
+
+    def get_color(self, obj):
+        return obj.id_variant.color if obj.id_variant_id else None
+
+    def validate(self, attrs):
+        if attrs.get('quantity') in (None, 0):
+            raise serializers.ValidationError('La cantidad del movimiento no puede ser 0.')
+        return attrs
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 

@@ -1,12 +1,12 @@
 services:
   # ──────────────────────────────────────────────
-  # NGINX - Servidor de archivos estáticos
+  # NGINX - Servidor de archivos estáticos + reverse proxy
   # ──────────────────────────────────────────────
   nginx:
     image: nginx:alpine
-    container_name: nginx
+    container_name: ${CLIENT_NAME}_nginx
     ports:
-      - "8090:80"
+      - "${WEB_PORT}:80"
     volumes:
       - ./web:/usr/share/nginx/html:ro
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
@@ -18,22 +18,26 @@ services:
       - app-network
 
   # ──────────────────────────────────────────────
-  # POSTGRESQL - Base de datos
+  # POSTGRESQL - Base de datos del e-commerce (public + bot_data + n8n)
   # ──────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: postgres
+    container_name: ${CLIENT_NAME}_postgres
     environment:
-      POSTGRES_USER: ecommerce_user
-      POSTGRES_PASSWORD: ecommerce_pass
-      POSTGRES_DB: ecommerce_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: ${TZ:-America/Lima}
+    # Zona horaria del servidor: define la hora de pared que guardan las columnas
+    # `timestamp` por CURRENT_TIMESTAMP/NOW() (orders, Inventory, chat, approve_payment).
+    command: [ "postgres", "-c", "timezone=${TZ:-America/Lima}" ]
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
     # ports:
     #   - "5432:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ecommerce_user -d ecommerce_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -48,9 +52,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: backend
+    container_name: ${CLIENT_NAME}_backend
     env_file:
       - .env
+    environment:
+      TZ: ${TZ:-America/Lima}
     volumes:
       - ./backend:/app
       - ./media:/app/media
@@ -63,131 +69,126 @@ services:
     networks:
       - app-network
 
-  # ──────────────────────────────────────────────
-  # EVOLUTION API - Gateway de WhatsApp
-  # ──────────────────────────────────────────────
-  evolution-api:
-    image: evoapicloud/evolution-api:v2.3.7
-    container_name: evolution_api
-    env_file:
-      - .env.evolution
-    ports:
-      - "127.0.0.1:8080:8080"   # solo localhost por ahora (proxy nginx luego)
-    depends_on:
-      - evolution-postgres
-      - redis
-    volumes:
-      - evolution_instances:/evolution/instances
-    restart: unless-stopped
-    networks:
-      - app-network
-
-  # ──────────────────────────────────────────────
-  # EVOLUTION POSTGRES - BD propia de Evolution
-  # ──────────────────────────────────────────────
-  evolution-postgres:
-    image: postgres:15
-    container_name: evolution_postgres
-    environment:
-      POSTGRES_DB: evolution_db
-      POSTGRES_USER: evolution_user
-      POSTGRES_PASSWORD: evolution_pass
-    volumes:
-      - evolution_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U evolution_user -d evolution_db" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-    networks:
-      - app-network
-
-  # ──────────────────────────────────────────────
-  # REDIS - Caché de Evolution
-  # ──────────────────────────────────────────────
-  redis:
-    image: redis:7
-    container_name: evolution_redis
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    networks:
-      - app-network
-
-  # ──────────────────────────────────────────────
-  # N8N - Motor del bot (usa el Postgres del e-commerce, schema n8n)
-  # ──────────────────────────────────────────────
-  n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
-    container_name: whatsapp_n8n
-    environment:
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=postgres
-      - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=ecommerce_db
-      - DB_POSTGRESDB_USER=ecommerce_user
-      - DB_POSTGRESDB_PASSWORD=ecommerce_pass
-      - DB_POSTGRESDB_SCHEMA=n8n
-      - WEBHOOK_URL=http://localhost:5678/
-      - N8N_SECURE_COOKIE=false
-    ports:
-      - "127.0.0.1:5678:5678"   # solo localhost por ahora (proxy nginx luego)
-    depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - n8n_data:/home/node/.n8n
-    restart: unless-stopped
-    networks:
-      - app-network
-
-  # ──────────────────────────────────────────────
-  # CODE-SERVER - IDE web para todo el proyecto
   # # ──────────────────────────────────────────────
-  # code-server:
-  #   image: lscr.io/linuxserver/code-server:latest
-  #   container_name: code-server
+  # # EVOLUTION API - Gateway de WhatsApp
+  # # ──────────────────────────────────────────────
+  # evolution-api:
+  #   image: evoapicloud/evolution-api:v2.3.7
+  #   container_name: ${CLIENT_NAME}_evolution_api
   #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=America/Lima
-  #     - PASSWORD=winempresas
-  #     - SUDO_PASSWORD=Win123
-  #     - CS_BASE_PATH=/code
-  #   volumes:
-  #     - ./config:/config
-  #     - ./:/workspace
-  #   # Puerto solo accesible internamente (via Nginx en /code/)
+  #     AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
+  #     # Database (Postgres propio de Evolution)
+  #     DATABASE_ENABLED: "true"
+  #     DATABASE_PROVIDER: postgresql
+  #     DATABASE_CONNECTION_URI: postgres://${EVOLUTION_POSTGRES_USER}:${EVOLUTION_POSTGRES_PASSWORD}@evolution-postgres:5432/${EVOLUTION_POSTGRES_DB}
+  #     DATABASE_CONNECTION_CLIENT_NAME: evolution_exchange
+  #     DATABASE_SAVE_DATA_INSTANCE: "true"
+  #     DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+  #     DATABASE_SAVE_MESSAGE_UPDATE: "true"
+  #     DATABASE_SAVE_DATA_CONTACTS: "true"
+  #     DATABASE_SAVE_DATA_CHATS: "true"
+  #     DATABASE_SAVE_DATA_LABELS: "true"
+  #     DATABASE_SAVE_DATA_HISTORIC: "true"
+  #     # Redis cache
+  #     CACHE_REDIS_ENABLED: "true"
+  #     CACHE_REDIS_URI: redis://redis:6379/6
+  #     CACHE_REDIS_PREFIX_KEY: evolution
+  #     CACHE_REDIS_SAVE_INSTANCES: "false"
+  #     CACHE_LOCAL_ENABLED: "false"
   #   ports:
-  #     - "8443:8443"
+  #     - "127.0.0.1:${EVOLUTION_PORT}:8080"   # solo localhost por ahora (proxy nginx luego)
   #   depends_on:
-  #     - nginx
-  #     - postgres
-  #     - backend
-  #   restart: unless-stopped
-  #   networks:
-  #     - app-network
-  # ──────────────────────────────────────────────
-  # CLOUDFLARED - Quick Tunnel (dominio autogenerado)
-  # ──────────────────────────────────────────────
-  # cloudflared:
-  #   image: cloudflare/cloudflared:latest
-  #   container_name: cloudflared
-  #   command: tunnel --no-autoupdate --url http://nginx:80
-  #   depends_on:
-  #     - nginx
+  #     - evolution-postgres
+  #     - redis
+  #   volumes:
+  #     - ./evolution_instances:/evolution/instances
   #   restart: unless-stopped
   #   networks:
   #     - app-network
 
+  # # ──────────────────────────────────────────────
+  # # EVOLUTION POSTGRES - BD propia de Evolution
+  # # ──────────────────────────────────────────────
+  # evolution-postgres:
+  #   image: postgres:15
+  #   container_name: ${CLIENT_NAME}_evolution_postgres
+  #   environment:
+  #     POSTGRES_DB: ${EVOLUTION_POSTGRES_DB}
+  #     POSTGRES_USER: ${EVOLUTION_POSTGRES_USER}
+  #     POSTGRES_PASSWORD: ${EVOLUTION_POSTGRES_PASSWORD}
+  #   volumes:
+  #     - ./evolution_postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: [ "CMD-SHELL", "pg_isready -U ${EVOLUTION_POSTGRES_USER} -d ${EVOLUTION_POSTGRES_DB}" ]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+  #   networks:
+  #     - app-network
 
+  # # ──────────────────────────────────────────────
+  # # REDIS - Caché de Evolution
+  # # ──────────────────────────────────────────────
+  # redis:
+  #   image: redis:7
+  #   container_name: ${CLIENT_NAME}_redis
+  #   volumes:
+  #     - ./redis_data:/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - app-network
+
+  # # ──────────────────────────────────────────────
+  # # N8N - Motor del bot (usa el Postgres del e-commerce, schema n8n)
+  # # ──────────────────────────────────────────────
+  # n8n:
+  #   image: docker.n8n.io/n8nio/n8n:latest
+  #   container_name: ${CLIENT_NAME}_n8n
+  #   # Arranca como root solo para ajustar el dueño del bind-mount (Docker lo crea
+  #   # como root) y luego baja al usuario `node` (uid 1000) con el que corre n8n.
+  #   # Así un proyecto nuevo levanta de cero sin pre-crear carpetas ni chown manual.
+  #   user: "0:0"
+  #   entrypoint:
+  #     - /bin/sh
+  #     - -c
+  #     - mkdir -p /home/node/.n8n && chown -R node:node /home/node/.n8n && exec su node -c "exec sh /opt/n8n-seed/seed/init.sh"
+  #   environment:
+  #     DB_TYPE: postgresdb
+  #     DB_POSTGRESDB_HOST: ${POSTGRES_HOST}
+  #     DB_POSTGRESDB_PORT: ${POSTGRES_PORT}
+  #     DB_POSTGRESDB_DATABASE: ${POSTGRES_DB}
+  #     DB_POSTGRESDB_USER: ${POSTGRES_USER}
+  #     DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+  #     DB_POSTGRESDB_SCHEMA: n8n
+  #     N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+  #     WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+  #     N8N_SECURE_COOKIE: "false"
+  #     # Usadas por la auto-siembra (n8n/seed/) para inyectar en el workflow y las credenciales.
+  #     EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+  #     OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  #     # Owner de n8n auto-creado en cada arranque fresco (n8n 2.x ya no permite
+  #     # desactivar el login; esto evita rellenar el formulario de setup a mano).
+  #     N8N_OWNER_EMAIL: ${N8N_OWNER_EMAIL}
+  #     N8N_OWNER_PASSWORD: ${N8N_OWNER_PASSWORD}
+  #     # Tipo de negocio (variants/simple): el prompt del bot lo usa para rotular el 2º precio.
+  #     STORE_TYPE: ${STORE_TYPE}
+  #   ports:
+  #     - "127.0.0.1:${N8N_PORT}:5678"   # solo localhost por ahora (proxy nginx luego)
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   volumes:
+  #     - ./n8n_data:/home/node/.n8n
+  #     - ./n8n:/opt/n8n-seed:ro   # workflow semilla + scripts de auto-siembra
+  #   restart: unless-stopped
+  #   networks:
+  #     - app-network
+
+# La red y los volúmenes llevan el prefijo ${CLIENT_NAME} para que varios
+# stacks (uno por cliente) convivan en el mismo servidor sin colisionar.
 networks:
   app-network:
+    name: ${CLIENT_NAME}_app-network
     driver: bridge
 
-volumes:
-  evolution_instances:
-  evolution_postgres_data:
-  redis_data:
-  n8n_data:

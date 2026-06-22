@@ -39,11 +39,14 @@ def _env_list(name, default):
 # Hosts permitidos (separados por coma en la env ALLOWED_HOSTS).
 ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 
+# Puerto público del sitio (nginx). Las orígenes CORS/CSRF se derivan de aquí
+# para no repetir el puerto en el .env: cambiar WEB_PORT basta. En producción
+# se sobreescriben poniendo CORS_ALLOWED_ORIGINS/CSRF_TRUSTED_ORIGINS al dominio real.
+WEB_PORT = os.environ.get('WEB_PORT', '8090')
+_DEFAULT_WEB_ORIGINS = f'http://localhost:{WEB_PORT},http://127.0.0.1:{WEB_PORT}'
+
 # Orígenes confiables para CSRF (admin de Django). Deben incluir esquema y puerto.
-CSRF_TRUSTED_ORIGINS = _env_list(
-    'CSRF_TRUSTED_ORIGINS',
-    'http://localhost:8090,http://127.0.0.1:8090'
-)
+CSRF_TRUSTED_ORIGINS = _env_list('CSRF_TRUSTED_ORIGINS', _DEFAULT_WEB_ORIGINS)
 
 # Application definition
 
@@ -104,16 +107,20 @@ DATABASES = {
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'ecommerce_pass'),
         'HOST': os.environ.get('POSTGRES_HOST', 'postgres'),
         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        # search_path: las tablas del negocio (product/category/Inventory) viven en
+        # `tienda`; los modelos managed=False las resuelven sin qualificar. Django
+        # crea/gestiona sus tablas (auth, sesiones, cart, cart_item) en `public`,
+        # que va primero en el path (las nuevas tablas managed=True caen ahí).
+        'OPTIONS': {
+            'options': '-c search_path=public,tienda'
+        },
     }
 }
 
 # CORS: orígenes permitidos (separados por coma en la env CORS_ALLOWED_ORIGINS).
 # El frontend propio usa mismo-origen (nginx), así que esto solo aplica a
 # clientes externos autorizados.
-CORS_ALLOWED_ORIGINS = _env_list(
-    'CORS_ALLOWED_ORIGINS',
-    'http://localhost:8090,http://127.0.0.1:8090'
-)
+CORS_ALLOWED_ORIGINS = _env_list('CORS_ALLOWED_ORIGINS', _DEFAULT_WEB_ORIGINS)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -141,8 +148,9 @@ REST_FRAMEWORK = {
 # Número de WhatsApp para el checkout (configurable por env).
 WHATSAPP_PHONE = os.environ.get('WHATSAPP_PHONE', '51923949691')
 
-# Token compartido para la ingesta interna de comprobantes desde n8n.
-BOT_INTERNAL_TOKEN = os.environ.get('BOT_INTERNAL_TOKEN', 'cambia-este-token-interno')
+# Tipo de negocio: 'variants' (ropa: talla/color) o 'simple' (cosméticos: producto único).
+# Lo expone /api/config/ para que el frontend estático sepa qué mostrar.
+STORE_TYPE = os.environ.get('STORE_TYPE', 'simple')
 
 # Evolution API (para que el panel admin envíe mensajes de WhatsApp).
 EVOLUTION_API_URL = os.environ.get('EVOLUTION_API_URL', 'http://evolution-api:8080')
@@ -179,11 +187,14 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# Zona horaria local de la tienda (Perú, UTC-5 fijo, sin horario de verano).
+# Con USE_TZ=False Django trabaja en hora local naïve: las fechas se guardan y se
+# devuelven en esta zona, en línea con la del servidor Postgres (timezone=TZ).
+TIME_ZONE = os.environ.get('TZ', 'America/Lima')
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <title>EShopper - Gestión de Inventario</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link href="img/favicon.ico" rel="icon">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <link href="css/theme.css" rel="stylesheet">
+    <style>
+        /* Árbol de filtros del inventario */
+        #inv-tree .tree-row { border-radius: 4px; transition: background .12s ease; }
+        #inv-tree .tree-row:hover { background: rgba(0, 0, 0, .05); }
+        #inv-tree .tree-row.active { background: var(--brand-primary); color: #fff; }
+        #inv-tree .tree-row.active .text-muted { color: #fff !important; }
+        #inv-tree .tree-row .fa-chevron-right,
+        #inv-tree .tree-row .fa-chevron-down { width: 12px; }
+    </style>
+</head>
+
+<body>
+    <div id="topbar-placeholder"></div>
+    <div id="navbar-placeholder"></div>
+
+    <!-- Page Header -->
+    <div class="container-fluid bg-secondary mb-4">
+        <div class="d-flex flex-column align-items-center justify-content-center" style="min-height: 120px">
+            <h1 class="font-weight-semi-bold text-uppercase mb-0">Gestión de Inventario</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid pt-2">
+        <!-- Barra de resumen de stock -->
+        <div class="row px-xl-5 mb-4">
+            <div class="col-12">
+                <div class="bg-light border rounded p-3 d-flex flex-wrap justify-content-around text-center">
+                    <div><div class="text-muted small">Productos</div><h4 class="mb-0" id="kpi-items">0</h4></div>
+                    <div><div class="text-muted small">Unidades en stock</div><h4 class="mb-0 text-primary" id="kpi-units">0</h4></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row px-xl-5">
+            <!-- IZQUIERDA: Filtro por categoría / producto -->
+            <div class="col-lg-3 col-md-12 mb-4">
+                <div class="bg-light p-4 border h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="font-weight-semi-bold mb-0">Filtrar</h5>
+                        <button type="button" class="btn btn-sm mr-2 mb-2 variant-color btn-primary" id="btn-all">Todos</button>
+                    </div>
+
+                    <p class="text-muted small mb-2">Categoría → producto<span class="tree-variant-hint"> → talla/color</span>. El número es el stock actual.</p>
+                    <div id="inv-tree">
+                        <div class="text-muted text-center py-3">Cargando...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MEDIO: Formulario de nuevo movimiento -->
+            <div class="col-lg-3 col-md-12 mb-4">
+                <div class="bg-light p-4 border h-100">
+                    <h5 class="font-weight-semi-bold mb-3">Nuevo movimiento</h5>
+                    <form id="mov-form">
+                        <div class="form-group">
+                            <label>Tipo</label>
+                            <select class="form-control" id="mov-type">
+                                <option value="INGRESO">Ingreso de stock</option>
+                                <option value="MERMA">Merma / pérdida</option>
+                                <option value="DEVOLUCION">Devolución</option>
+                                <option value="AJUSTE">Ajuste</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Producto</label>
+                            <input type="text" class="form-control" id="mov-product-name" readonly placeholder="Selecciónalo a la izquierda">
+                            <input type="hidden" id="mov-product-id">
+                        </div>
+                        <div class="form-group" id="mov-variant-group" style="display:none;">
+                            <label>Variante (talla/color)</label>
+                            <select class="form-control" id="mov-variant"></select>
+                        </div>
+                        <div class="form-group" id="mov-direction-group" style="display:none;">
+                            <label>Sentido del ajuste</label>
+                            <select class="form-control" id="mov-direction">
+                                <option value="1">Sumar (+)</option>
+                                <option value="-1">Restar (−)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad</label>
+                            <input type="number" min="1" step="1" class="form-control" id="mov-qty" placeholder="Ej: 10">
+                        </div>
+                        <div class="form-group">
+                            <label>Nota</label>
+                            <input type="text" class="form-control" id="mov-note" placeholder="Opcional">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block" id="btn-register">Registrar movimiento</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- DERECHA: Kardex -->
+            <div class="col-lg-6 col-md-12 mb-4">
+                <div class="bg-light p-4 border h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="font-weight-semi-bold mb-0">Movimientos (kardex)</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+                                <i class="fa fa-download mr-1"></i>Exportar CSV
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a class="dropdown-item" href="#" onclick="exportCSV('stock'); return false;">Stock actual</a>
+                                <a class="dropdown-item" href="#" onclick="exportCSV('kardex'); return false;">Kardex (movimientos)</a>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-2" id="kardex-context">Mostrando todos los movimientos.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="bg-secondary text-dark">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Producto</th>
+                                    <th class="col-variant">Talla/Color</th>
+                                    <th>Acción</th>
+                                    <th class="text-right">Cant.</th>
+                                    <th>Nota</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kardex-rows">
+                                <tr><td colspan="7" class="text-center text-muted">Cargando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js"></script>
+    <script src="js/main.js"></script>
+
+    <script>
+        const API_URL = '/api';
+        let showVariants = false;
+        let selectedProduct = null;   // {id, name}
+        let selectedCategory = null;  // id
+        let selectedVariant = null;   // {id, label}
+        let stockRows = [];           // de /api/inventory/stock/ (incluye id_category)
+        let categories = [];          // de /api/categories/
+        let expandedCats = new Set(); // ids de categoría desplegadas (string)
+        let expandedProds = new Set();// ids de producto desplegados (string)
+
+        $(document).ready(function () {
+            (window.getStoreConfig ? window.getStoreConfig() : Promise.resolve({})).then(function (cfg) {
+                showVariants = !!(cfg && cfg.show_variants);
+                if (!showVariants) { $('.col-variant').hide(); $('.tree-variant-hint').hide(); }
+                setFormEnabled(false);   // sin producto seleccionado, el formulario está deshabilitado
+                // Cargar categorías (nombres) y stock; luego construir el árbol.
+                $.ajax({
+                    url: `${API_URL}/categories/`, method: 'GET',
+                    success: function (cats) { categories = cats || []; loadStock(); }
+                });
+                loadKardex();
+            });
+
+            $('#btn-all').click(function () {
+                selectedCategory = null; selectedProduct = null; selectedVariant = null;
+                expandedCats.clear(); expandedProds.clear();
+                $('#mov-product-name').val(''); $('#mov-product-id').val('');
+                $('#mov-variant-group').hide();
+                setFormEnabled(false);
+                buildTree();
+                updateContext();
+                loadKardex();
+            });
+
+            // Sentido solo visible en AJUSTE
+            $('#mov-type').change(function () {
+                $('#mov-direction-group').toggle($(this).val() === 'AJUSTE');
+            }).trigger('change');
+
+            $('#mov-form').on('submit', function (e) { e.preventDefault(); registerMovement(); });
+
+            // ---- Eventos del árbol (delegados; el árbol se reconstruye al refrescar stock) ----
+            $('#inv-tree').on('click', '.cat-row', function () {
+                const id = $(this).data('cid');
+                if (expandedCats.has(String(id))) expandedCats.delete(String(id)); else expandedCats.add(String(id));
+                $(this).next('.tree-children').slideToggle(120);
+                $(this).find('.fa').first().toggleClass('fa-chevron-right fa-chevron-down');
+                selectNode('cat', { id: id, name: $(this).data('cname') });
+                setActiveRow($(this));
+            });
+            $('#inv-tree').on('click', '.prod-row', function (e) {
+                e.stopPropagation();
+                const id = $(this).data('pid');
+                if ($(this).data('hasvar')) {
+                    if (expandedProds.has(String(id))) expandedProds.delete(String(id)); else expandedProds.add(String(id));
+                    $(this).next('.tree-children').slideToggle(120);
+                    $(this).find('.fa').first().toggleClass('fa-chevron-right fa-chevron-down');
+                }
+                selectNode('prod', { id: id, name: $(this).data('pname') });
+                setActiveRow($(this));
+            });
+            $('#inv-tree').on('click', '.var-row', function (e) {
+                e.stopPropagation();
+                selectNode('var', {
+                    id: $(this).data('vid'), pid: $(this).data('pid'),
+                    pname: $(this).data('pname'), label: $(this).data('label')
+                });
+                setActiveRow($(this));
+            });
+        });
+
+        function esc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        }
+
+        // Habilita el formulario de movimiento solo cuando hay un producto seleccionado.
+        function setFormEnabled(enabled) {
+            $('#mov-form :input').prop('disabled', !enabled);
+        }
+
+        function setActiveRow($el) {
+            $('#inv-tree .tree-row').removeClass('active');
+            $el.addClass('active');
+        }
+
+        // ---- Stock + árbol ----
+        function loadStock() {
+            $.ajax({
+                url: `${API_URL}/inventory/stock/`, method: 'GET',
+                success: function (data) {
+                    stockRows = data.items || [];
+                    const t = data.totals || {};
+                    $('#kpi-items').text(t.count || 0);
+                    $('#kpi-units').text(t.units || 0);
+                    buildTree();       // reconstruye con stock fresco (conserva expansión/selección)
+                    updateContext();
+                }
+            });
+        }
+
+        // Árbol desplegable: categoría → producto → (talla/color en modo variants).
+        // El número a la derecha de cada nodo es su stock actual.
+        function buildTree() {
+            const cats = categories.slice();
+            const known = new Set(cats.map(c => String(c.id)));
+            stockRows.forEach(r => {
+                if (r.id_category != null && !known.has(String(r.id_category))) {
+                    known.add(String(r.id_category));
+                    cats.push({ id: r.id_category, category_name: r.category_name || ('Cat ' + r.id_category) });
+                }
+            });
+            if (!cats.length) { $('#inv-tree').html('<div class="text-muted text-center py-3">Sin categorías</div>'); return; }
+
+            let html = '';
+            cats.forEach(c => {
+                const crows = stockRows.filter(r => String(r.id_category) === String(c.id));
+                const cstock = crows.reduce((s, r) => s + (r.stock || 0), 0);
+                const cexp = expandedCats.has(String(c.id));
+                const cactive = (String(selectedCategory) === String(c.id) && !selectedProduct) ? 'active' : '';
+
+                // Productos de la categoría
+                const order = [], byProd = {};
+                crows.forEach(r => { const k = String(r.id_product); if (!byProd[k]) { byProd[k] = []; order.push(k); } byProd[k].push(r); });
+                let pchildren = '';
+                order.forEach(pk => {
+                    const prows = byProd[pk];
+                    const pid = prows[0].id_product;
+                    const pname = esc(prows[0].product_name);
+                    const pstock = prows.reduce((s, r) => s + (r.stock || 0), 0);
+                    const hasVar = showVariants && prows.some(r => r.id_variant);
+                    const pexp = expandedProds.has(String(pid));
+                    const pactive = (selectedProduct && String(selectedProduct.id) === String(pid) && !selectedVariant) ? 'active' : '';
+                    let vchildren = '';
+                    if (hasVar) {
+                        prows.filter(r => r.id_variant).forEach(r => {
+                            const label = esc([r.size, r.color].filter(Boolean).join(' / ') || ('#' + r.id_variant));
+                            const vactive = (selectedVariant && String(selectedVariant.id) === String(r.id_variant)) ? 'active' : '';
+                            vchildren += `<div class="tree-node"><div class="tree-row var-row d-flex justify-content-between align-items-center px-2 py-1 ${vactive}" data-vid="${r.id_variant}" data-pid="${pid}" data-pname="${pname}" data-label="${label}" style="cursor:pointer;"><span class="text-muted small">${label}</span><span class="badge badge-light border">${r.stock || 0}</span></div></div>`;
+                        });
+                    }
+                    const caret = hasVar
+                        ? `<i class="fa fa-chevron-${pexp ? 'down' : 'right'} fa-xs mr-2 text-muted"></i>`
+                        : '<span class="d-inline-block mr-2" style="width:12px;"></span>';
+                    pchildren += `<div class="tree-node">
+                        <div class="tree-row prod-row d-flex justify-content-between align-items-center px-2 py-1 ${pactive}" data-pid="${pid}" data-pname="${pname}" data-hasvar="${hasVar ? 1 : 0}" style="cursor:pointer;">
+                            <span>${caret}${pname}</span><span class="badge badge-light border">${pstock}</span>
+                        </div>
+                        <div class="tree-children pl-3" style="display:${pexp ? 'block' : 'none'};">${vchildren}</div>
+                    </div>`;
+                });
+
+                html += `<div class="tree-node">
+                    <div class="tree-row cat-row d-flex justify-content-between align-items-center px-2 py-1 ${cactive}" data-cid="${c.id}" data-cname="${esc(c.category_name)}" style="cursor:pointer;">
+                        <span><i class="fa fa-chevron-${cexp ? 'down' : 'right'} fa-xs mr-2 text-muted"></i>${esc(c.category_name)}</span>
+                        <span class="badge badge-light border">${cstock}</span>
+                    </div>
+                    <div class="tree-children pl-2" style="display:${cexp ? 'block' : 'none'};">${pchildren || '<div class="text-muted small px-2 py-1">Sin productos</div>'}</div>
+                </div>`;
+            });
+            $('#inv-tree').html(html);
+        }
+
+        // Selección de un nodo del árbol → filtra el kardex y preselecciona en el formulario.
+        function selectNode(type, d) {
+            if (type === 'cat') {
+                selectedCategory = d.id; selectedProduct = null; selectedVariant = null;
+                $('#mov-product-name').val(''); $('#mov-product-id').val(''); $('#mov-variant-group').hide();
+                setFormEnabled(false);
+            } else if (type === 'prod') {
+                selectedProduct = { id: d.id, name: d.name }; selectedVariant = null;
+                $('#mov-product-name').val(d.name); $('#mov-product-id').val(d.id);
+                setFormEnabled(true);
+                loadProductVariants(d.id, null);
+            } else if (type === 'var') {
+                selectedProduct = { id: d.pid, name: d.pname };
+                selectedVariant = { id: d.id, label: d.label };
+                $('#mov-product-name').val(d.pname); $('#mov-product-id').val(d.pid);
+                setFormEnabled(true);
+                loadProductVariants(d.pid, d.id);
+            }
+            updateContext();
+            loadKardex();
+        }
+
+        // Texto contextual sobre el kardex (con el stock del nodo seleccionado).
+        function updateContext() {
+            if (selectedVariant && selectedProduct) {
+                const r = stockRows.find(x => String(x.id_variant) === String(selectedVariant.id));
+                $('#kardex-context').html(`<b>${esc(selectedProduct.name)}</b> · ${esc(selectedVariant.label)} · Stock: <b>${r ? r.stock : 0}</b>`);
+            } else if (selectedProduct) {
+                const units = stockRows.filter(x => String(x.id_product) === String(selectedProduct.id)).reduce((s, r) => s + (r.stock || 0), 0);
+                $('#kardex-context').html(`<b>${esc(selectedProduct.name)}</b> · Stock: <b>${units}</b>`);
+            } else if (selectedCategory) {
+                const units = stockRows.filter(x => String(x.id_category) === String(selectedCategory)).reduce((s, r) => s + (r.stock || 0), 0);
+                const cat = categories.find(c => String(c.id) === String(selectedCategory));
+                $('#kardex-context').html(`Categoría: <b>${esc(cat ? cat.category_name : '')}</b> · Stock: <b>${units}</b>`);
+            } else {
+                $('#kardex-context').text('Mostrando todos los movimientos.');
+            }
+        }
+
+        // Carga las variantes del producto en el combo del formulario (y selecciona una si se indica).
+        function loadProductVariants(productId, selVariantId) {
+            if (!showVariants) { $('#mov-variant-group').hide(); return; }
+            $.ajax({
+                url: `${API_URL}/variants/?id_product=${productId}`, method: 'GET',
+                success: function (variants) {
+                    const sel = $('#mov-variant').empty();
+                    if (!variants.length) { $('#mov-variant-group').hide(); return; }
+                    variants.forEach(v => {
+                        const label = [v.size, v.color].filter(Boolean).join(' / ') || ('#' + v.id);
+                        sel.append(`<option value="${v.id}">${label}</option>`);
+                    });
+                    if (selVariantId) sel.val(selVariantId);
+                    $('#mov-variant-group').show();
+                }
+            });
+        }
+
+        // ---- Kardex ----
+        function loadKardex() {
+            let url = `${API_URL}/inventory/?`;
+            if (selectedVariant) url += `id_variant=${selectedVariant.id}`;
+            else if (selectedProduct) url += `id_product=${selectedProduct.id}`;
+            else if (selectedCategory) url += `id_category=${selectedCategory}`;
+            $.ajax({
+                url: url, method: 'GET',
+                success: function (movs) {
+                    const tb = $('#kardex-rows').empty();
+                    if (!movs.length) { tb.append('<tr><td colspan="6" class="text-center text-muted">Sin movimientos.</td></tr>'); return; }
+                    movs.forEach(m => {
+                        const fecha = (m.created_at || '').replace('T', ' ').substring(0, 16);
+                        const variante = [m.size, m.color].filter(Boolean).join(' / ') || '-';
+                        const inflow = m.quantity >= 0;
+                        const accion = `<span class="badge badge-${inflow ? 'success' : 'danger'}">${m.movement_type}</span>`;
+                        const cant = `<span class="text-${inflow ? 'success' : 'danger'}">${inflow ? '+' : ''}${m.quantity}</span>`;
+                        tb.append(`<tr>
+                            <td class="small">${fecha}</td>
+                            <td>${m.product_name || ''}</td>
+                            <td class="col-variant">${variante}</td>
+                            <td>${accion}</td>
+                            <td class="text-right">${cant}</td>
+                            <td class="small">${m.note || ''}</td>
+                        </tr>`);
+                    });
+                    if (!showVariants) $('.col-variant').hide();
+                }
+            });
+        }
+
+        // ---- Registrar movimiento ----
+        function registerMovement() {
+            const productId = $('#mov-product-id').val();
+            if (!productId) { alert('Selecciona un producto a la izquierda.'); return; }
+            const type = $('#mov-type').val();
+            let qty = parseInt($('#mov-qty').val());
+            if (!qty || qty < 1) { alert('Ingresa una cantidad válida (mayor a 0).'); return; }
+
+            // signo según el tipo
+            let sign = 1;
+            if (type === 'MERMA') sign = -1;
+            else if (type === 'AJUSTE') sign = parseInt($('#mov-direction').val());
+            const quantity = sign * Math.abs(qty);
+
+            // variante (obligatoria si el producto tiene variantes)
+            let variantId = null;
+            if ($('#mov-variant-group').is(':visible')) {
+                variantId = $('#mov-variant').val();
+                if (!variantId) { alert('Selecciona la variante (talla/color).'); return; }
+            }
+
+            const payload = {
+                id_product: parseInt(productId),
+                id_variant: variantId ? parseInt(variantId) : null,
+                movement_type: type,
+                quantity: quantity,
+                note: $('#mov-note').val() || null
+            };
+
+            $.ajax({
+                url: `${API_URL}/inventory/`, method: 'POST',
+                contentType: 'application/json', data: JSON.stringify(payload),
+                success: function () {
+                    $('#mov-qty').val(''); $('#mov-note').val('');
+                    loadKardex();
+                    loadStock();
+                },
+                error: function (err) {
+                    let det = '';
+                    try { det = JSON.stringify(err.responseJSON); } catch (e) {}
+                    alert('Error al registrar el movimiento (HTTP ' + err.status + '). ' + det);
+                }
+            });
+        }
+
+        // ---- Export CSV (fetch + blob para enviar el token) ----
+        function exportCSV(kind) {
+            const token = localStorage.getItem('access_token');
+            fetch(`${API_URL}/inventory/export/?kind=${kind}`, { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(r => r.ok ? r.blob() : Promise.reject(r.status))
+                .then(blob => {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `inventario_${kind}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                })
+                .catch(s => alert('No se pudo exportar (HTTP ' + s + ').'));
+        }
+    </script>
+    <script src="js/load_components.js"></script>
+</body>
+</html>

@@ -16,30 +16,47 @@ django.setup()
 
 from django.contrib.auth.models import User, Group
 
-super_grp, _ = Group.objects.get_or_create(name='SUPERADMIN')
-admin_grp, _ = Group.objects.get_or_create(name='ADMIN')
-cust_grp, _ = Group.objects.get_or_create(name='CUSTOMER')
 
-# 1. Superadministrador (Acceso total + Django Admin)
-superadmin, _ = User.objects.get_or_create(username='superadmin', defaults={'email':'super@test.com', 'is_staff': True, 'is_superuser': True})
-superadmin.set_password('admin123')
-superadmin.save()
-superadmin.groups.add(super_grp)
+def env(key, default):
+    return os.environ.get(key, default)
 
-# 2. Administrador (Acceso a Mantenimiento de Productos, pero NO al Django Admin)
-# Le quitamos is_staff e is_superuser al admin "normal" en caso los tuviera de pruebas previas
-admin, _ = User.objects.get_or_create(username='admin', defaults={'email':'admin@test.com', 'is_staff': False, 'is_superuser': False})
-admin.is_staff = False
-admin.is_superuser = False
-admin.set_password('admin123')
-admin.save()
-admin.groups.add(admin_grp)
 
-# 3. Cliente (Solo compras)
-cust, _ = User.objects.get_or_create(username='cliente', defaults={'email':'cliente@test.com', 'is_staff': False, 'is_superuser': False})
-cust.set_password('cliente123')
-cust.save()
-cust.groups.add(cust_grp)
+# Usuarios sembrados: configurables por .env (los defaults son de desarrollo).
+# (grupo, username, email, password, is_staff, is_superuser)
+seeds = [
+    ('SUPERADMIN',                              # acceso total + admin de Django
+     env('SEED_SUPERADMIN_USERNAME', 'superadmin'),
+     env('SEED_SUPERADMIN_EMAIL', 'super@test.com'),
+     env('SEED_SUPERADMIN_PASSWORD', 'admin123'),
+     True, True),
+    ('ADMIN',                                   # mantenimiento, NO admin de Django
+     env('SEED_ADMIN_USERNAME', 'admin'),
+     env('SEED_ADMIN_EMAIL', 'admin@test.com'),
+     env('SEED_ADMIN_PASSWORD', 'admin123'),
+     False, False),
+    ('CUSTOMER',                                # solo compras (cuenta demo)
+     env('SEED_CUSTOMER_USERNAME', 'cliente'),
+     env('SEED_CUSTOMER_EMAIL', 'cliente@test.com'),
+     env('SEED_CUSTOMER_PASSWORD', 'cliente123'),
+     False, False),
+]
+
+for group_name, username, email, password, is_staff, is_superuser in seeds:
+    group, _ = Group.objects.get_or_create(name=group_name)
+    user, created = User.objects.get_or_create(
+        username=username,
+        defaults={'email': email, 'is_staff': is_staff, 'is_superuser': is_superuser},
+    )
+    # Los flags de permisos se reafirman SIEMPRE (seguridad: que el ADMIN
+    # "normal" no quede como staff/superuser por pruebas previas).
+    user.is_staff = is_staff
+    user.is_superuser = is_superuser
+    # La contraseña solo se fija al CREAR el usuario, para no pisar un cambio
+    # hecho luego desde el admin de Django o con manage.py changepassword.
+    if created:
+        user.set_password(password)
+    user.save()
+    user.groups.add(group)
 
 print("Seed de 3 roles completado con exito.")
 EOF

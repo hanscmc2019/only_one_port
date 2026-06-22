@@ -17,7 +17,10 @@ def product_image_path(instance, filename):
 class Product(models.Model):
     product_name = models.CharField(max_length=255, blank=True, null=True)
     details = models.TextField(blank=True, null=True)
-    price = models.BigIntegerField(blank=True, null=True)
+    price_retail = models.BigIntegerField(blank=True, null=True)      # por menor / normal (principal)
+    price_wholesale = models.BigIntegerField(blank=True, null=True)   # por mayor / con descuento (opcional)
+    stock = models.IntegerField(default=0)  # stock simple; se ignora si el producto tiene variantes
+    cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  # costo unitario actual (valorización)
     image = models.ImageField(upload_to=product_image_path, blank=True, null=True, max_length=255)
     id_category = models.ForeignKey(Category, models.DO_NOTHING, db_column='id_category', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -25,6 +28,19 @@ class Product(models.Model):
     class Meta:
         managed = False
         db_table = 'product'
+
+class ProductVariant(models.Model):
+    # Variante talla/color con stock propio (solo cliente de ropa). Sin precio: hereda de product.
+    id_product = models.ForeignKey(Product, models.DO_NOTHING, db_column='id_product', related_name='variants', blank=True, null=True)
+    size = models.CharField(max_length=50, blank=True, null=True)
+    color = models.CharField(max_length=50, blank=True, null=True)
+    stock = models.IntegerField(default=0)
+    sku = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        managed = False
+        db_table = 'product_variant'
 
 from django.conf import settings
 
@@ -42,33 +58,27 @@ class Cart(models.Model):
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, null=True, blank=True)
     quantity = models.PositiveIntegerField(default=1)
     added_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = True
         db_table = 'cart_item'
-        unique_together = ('cart', 'product')
+        unique_together = ('cart', 'product', 'variant')
 
 class Inventory(models.Model):
-    # Movimiento de inventario. type: convención del negocio (p.ej. 1=entrada, 2=salida).
-    id_product = models.ForeignKey(Product, models.DO_NOTHING, db_column='id_product', blank=True, null=True)
-    type = models.SmallIntegerField()
-    amount = models.BigIntegerField(blank=True, null=True)
+    # Kardex: un registro por movimiento. El stock actual lo mantiene un trigger
+    # de Postgres desde aquí (ver postgres/init/04_inventory.sql).
+    INGRESO, AJUSTE, MERMA, DEVOLUCION, VENTA = 'INGRESO', 'AJUSTE', 'MERMA', 'DEVOLUCION', 'VENTA'
+    id_product = models.ForeignKey(Product, models.DO_NOTHING, db_column='id_product', related_name='movements')
+    id_variant = models.ForeignKey(ProductVariant, models.DO_NOTHING, db_column='id_variant', blank=True, null=True)
+    movement_type = models.CharField(max_length=20)  # INGRESO, AJUSTE, MERMA, DEVOLUCION, VENTA
+    quantity = models.IntegerField()                 # delta con signo (+entra, -sale)
+    unit_cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    note = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = False
         db_table = 'Inventory'
-
-class Sale(models.Model):
-    id_product = models.ForeignKey(Product, models.DO_NOTHING, db_column='id_product', blank=True, null=True)
-    product_name = models.CharField(max_length=255, blank=True, null=True)
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
-    amount = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
-    total_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        managed = False
-        db_table = 'sale'

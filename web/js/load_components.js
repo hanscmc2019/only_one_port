@@ -1,4 +1,24 @@
+// Config del negocio (tipo de tienda) servida por el backend desde el .env.
+// El frontend estático no lee el .env, así que la pide a /api/config/ una sola
+// vez. Las páginas usan getStoreConfig().then(cfg => ...) para saber si mostrar
+// variantes (talla/color) y cómo rotular el 2º precio.
+let _storeConfigPromise = null;
+window.getStoreConfig = function() {
+    if (!_storeConfigPromise) {
+        _storeConfigPromise = $.ajax({ url: '/api/config/', method: 'GET' })
+            .then(function(cfg) { window.STORE_CONFIG = cfg; return cfg; })
+            .catch(function() {
+                const def = { store_type: 'simple', show_variants: false, price_wholesale_label: 'Precio con descuento' };
+                window.STORE_CONFIG = def; return def;
+            });
+    }
+    return _storeConfigPromise;
+};
+
 $(document).ready(function() {
+    // Cargar config del negocio cuanto antes (deja window.STORE_CONFIG listo)
+    window.getStoreConfig();
+
     // 1. Cargar Topbar
     if ($('#topbar-placeholder').length) {
         $('#topbar-placeholder').load('components/topbar.html');
@@ -36,7 +56,7 @@ function applyAuthLogic() {
     const is_superadmin = roles.includes('SUPERADMIN');
 
     // Páginas solo para Admin/SuperAdmin
-    const adminPages = ['mantenimiento_productos.html', 'monitor_ventas.html'];
+    const adminPages = ['catalogo.html', 'inventario.html', 'ventas.html', 'monitor_ventas.html'];
 
     // a) Ocultar los links de páginas admin si no es Admin o SuperAdmin
     if (!is_admin) {

@@ -2697,8 +2697,8 @@ fieldset:disabled a.btn {
 }
 
 .btn-outline-secondary {
-  color: var(--brand-secondary);
-  border-color: var(--brand-secondary);
+  color: var(--brand-text);
+  border-color: var(--brand-text);
 }
 
 .btn-outline-secondary:hover {
@@ -9480,8 +9480,24 @@ a.text-dark:hover, a.text-dark:focus {
 }
 
 .navbar-light .navbar-nav .nav-link:hover,
+.navbar-light .navbar-nav .nav-link:focus {
+  color: var(--brand-primary);
+}
+
+/* === Estilo del link ACTIVO (página actual) — usa UNA de las dos opciones === */
+
+/* OPCIÓN A: solo el texto en color primary (descomenta para usar) */
+/*
 .navbar-light .navbar-nav .nav-link.active {
   color: var(--brand-primary);
+}
+*/
+
+/* OPCIÓN B: todo el elemento sombreado de primary con texto blanco */
+.navbar-light .navbar-nav .nav-link.active {
+  background-color: var(--brand-primary);
+  color: #fff;
+  /* border-radius: 5px; */
 }
 
 @media (max-width: 991.98px) {
