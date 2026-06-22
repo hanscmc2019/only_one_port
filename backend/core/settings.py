@@ -43,7 +43,17 @@ ALLOWED_HOSTS = _env_list('ALLOWED_HOSTS', 'localhost,127.0.0.1')
 # para no repetir el puerto en el .env: cambiar WEB_PORT basta. En producción
 # se sobreescriben poniendo CORS_ALLOWED_ORIGINS/CSRF_TRUSTED_ORIGINS al dominio real.
 WEB_PORT = os.environ.get('WEB_PORT', '8090')
-_DEFAULT_WEB_ORIGINS = f'http://localhost:{WEB_PORT},http://127.0.0.1:{WEB_PORT}'
+_web_origins = [f'http://localhost:{WEB_PORT}', f'http://127.0.0.1:{WEB_PORT}']
+
+# Acceso por IP/dominio público (NAT). Una sola variable PUBLIC_HOST (solo el host,
+# sin esquema/puerto/ruta) se suma sola a ALLOWED_HOSTS y a las orígenes CORS/CSRF
+# usando WEB_PORT. Ej.: PUBLIC_HOST=38.25.74.14 → permite http://38.25.74.14:$WEB_PORT.
+PUBLIC_HOST = os.environ.get('PUBLIC_HOST', '').strip()
+if PUBLIC_HOST:
+    ALLOWED_HOSTS.append(PUBLIC_HOST)
+    _web_origins.append(f'http://{PUBLIC_HOST}:{WEB_PORT}')
+
+_DEFAULT_WEB_ORIGINS = ','.join(_web_origins)
 
 # Orígenes confiables para CSRF (admin de Django). Deben incluir esquema y puerto.
 CSRF_TRUSTED_ORIGINS = _env_list('CSRF_TRUSTED_ORIGINS', _DEFAULT_WEB_ORIGINS)
